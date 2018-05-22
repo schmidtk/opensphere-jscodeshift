@@ -1,0 +1,26 @@
+{
+  "name": "opensphere-jscodeshift",
+  "version": "1.0.0",
+  "description": "Scripts designed to migrate OpenSphere code toward ES6 modules.",
+  "bin": {
+    "run-tests": "./scripts/run-tests.js"
+  },
+  "scripts": {
+    "init": "rimraf .build && mkdirp .build",
+    "lint": "eslint --cache 'transforms/**/*.js' 'scripts/**/*.js'",
+    "pretest": "npm run init && mkdirp .build/test && cp -rf test/*.test.js .build/test/",
+    "test": "jscodeshift -t scripts/run-tests.js .build/test",
+    "shift": "jscodeshift",
+    "shift:dry": "jscodeshift --dry --print"
+  },
+  "author": "Kevin Schmidt",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "eslint": "^4.19.1",
+    "mkdirp": "^0.5.1",
+    "rimraf": "^2.6.2"
+  },
+  "dependencies": {
+    "jscodeshift": "^0.5.0"
+  }
+}
