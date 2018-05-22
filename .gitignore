@@ -1,0 +1,8 @@
+# Build artifacts
+.build
+.eslintcache
+
+# Node/NPM/Yarn artifacts
+node_modules
+package-lock.json
+yarn-*
