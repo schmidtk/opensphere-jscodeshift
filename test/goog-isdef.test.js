@@ -17,11 +17,19 @@ var castVar = /** @type {!test.Type} */ ({
 });
 
 //
-// BUG ALERT:
+// This transforms incorrectly because the returned ObjectExpression has both leading comments and is parenthesized.
+// When jscodeshift writes that back out, it incorrectly puts the comment inside the parentheses. A warning should be
+// displayed with the line number in the original file.
 //
-// This one currently transforms incorrectly because the returned ObjectExpression has both leading comments and is
-// parenthesized. When jscodeshift writes that back out, it incorrectly puts the comment inside the parentheses.
+
+var castProperty = goog.isDef(someObject['property']) ? /** @type {boolean} */ (someObject['property']) : false;
+
 //
+// This transforms incorrectly because the returned ObjectExpression has both leading comments and is parenthesized.
+// When jscodeshift writes that back out, it incorrectly puts the comment inside the parentheses. A warning should be
+// displayed with the line number in the original file.
+//
+
 var fn = function(someVar) {
   return /** @type {!test.Type} */ ({
     a: goog.isDef(someVar) ? someVar : false,

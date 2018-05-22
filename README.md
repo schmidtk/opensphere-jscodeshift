@@ -29,3 +29,11 @@ When developing transforms, [AST Explorer](http://astexplorer.net/) is a very us
 Put test code for transforms in the `test` directory. Running `yarn test` will copy all tests to `.build/test` and run all transforms against them. Inspect files to view the result of these transformations.
 
 Please do not run `yarn shift` or `jscodeshift` directly against test files, as it will modify them in-place. Use `npm run test`, which will copy them to `.build/test` and run all transforms against the copies.
+
+To inspect transforms, load `chrome://inspect` then run:
+
+```
+yarn run inspect -t <transform> <test file>
+```
+
+The Node process will appear under Remote Target, and you can click `inspect` to launch a debugger paused at the first line. Run the process once so all files are loaded, open your file in Sources, set a breakpoint, then relaunch the inspect script.
