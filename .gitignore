@@ -1,6 +1,7 @@
 # Build artifacts
 .build
 .eslintcache
+.nyc_output
 
 # Node/NPM/Yarn artifacts
 node_modules

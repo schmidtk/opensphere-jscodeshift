@@ -1,4 +1,5 @@
 const colors = require('colors/safe');
+const jscs = require('jscodeshift');
 
 const isParenthesizedWithLeadingComments = (node) => {
   return node && node.leadingComments && node.leadingComments.length &&
@@ -8,10 +9,10 @@ const isParenthesizedWithLeadingComments = (node) => {
 /**
  * Test if a JSDoc comment block would be moved inappropriately as a result of a node replacement.
  * @param {File} file The source file.
- * @param {Node} node The node being replaced.
+ * @param {NodePath} path The node path being replaced.
  * @return {number} The line number of the JSDoc comment block, or NaN if none found.
  */
-const testForJsdocWarning = (file, api, path) => {
+const testForJsdocWarning = (file, path) => {
   if (path && path.parent) {
     const parentPath = path.parent;
     const parentNode = parentPath.value;
@@ -41,36 +42,34 @@ const testForJsdocWarning = (file, api, path) => {
     }
 
 
-    testForJsdocWarning(file, api, parentPath);
+    testForJsdocWarning(file, parentPath);
   }
 };
 
 /**
  * Replace a CallExpression with a BinaryExpression.
  * @param {Node} file The root node.
- * @param {Object} api The jscodeshift API.
  * @param {Object} callOptions The CallExpression matching options, passed to `root.find`.
  * @param {Object} binaryOptions The BinaryExpression options.
  */
-const replaceCallWithBinaryExpression = (file, api, callOptions, binaryOptions) => {
-  const j = api.jscodeshift;
-  const root = j(file.source);
+const replaceCallWithBinaryExpression = (file, callOptions, binaryOptions) => {
+  const root = jscs(file.source);
 
   // find call expressions matching the provided options
-  root.find(j.CallExpression, callOptions).forEach(path => {
+  root.find(jscs.CallExpression, callOptions).forEach(path => {
     const parentNode = path.parent ? path.parent.node : undefined;
     const leftSide = path.node.arguments[0];
 
     if (parentNode && parentNode.type === 'UnaryExpression' && parentNode.operator === '!') {
       // replace `!expression(arg)`
-      j(path.parent).replaceWith(pp => j.binaryExpression(binaryOptions.notExpression, leftSide, binaryOptions.rightSide));
+      jscs(path.parent).replaceWith(pp => jscs.binaryExpression(binaryOptions.notExpression, leftSide, binaryOptions.rightSide));
 
-      testForJsdocWarning(file, api, path);
+      testForJsdocWarning(file, path);
     } else {
       // replace `expression(arg)`
-      j(path).replaceWith(pp => j.binaryExpression(binaryOptions.expression, leftSide, binaryOptions.rightSide));
+      jscs(path).replaceWith(pp => jscs.binaryExpression(binaryOptions.expression, leftSide, binaryOptions.rightSide));
 
-      testForJsdocWarning(file, api, path);
+      testForJsdocWarning(file, path);
     }
   });
 

@@ -1,7 +1,7 @@
 const callToBinary = require('../scripts/calltobinary');
 
 module.exports = (file, api, options) => {
-  const root = callToBinary(file, api, {
+  const root = callToBinary(file, {
     callee: {
       object: {name: 'goog'},
       property: {name: 'isNull'}
