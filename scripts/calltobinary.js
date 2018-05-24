@@ -1,9 +1,67 @@
 const colors = require('colors/safe');
+const get = require('get-value');
 const jscs = require('jscodeshift');
 
-const isParenthesizedWithLeadingComments = (node) => {
-  return node && node.leadingComments && node.leadingComments.length &&
-      (node.extra && node.extra.parenthesized || node.parenthesizedExpression);
+const warningText = colors.yellow('[WARNING]');
+
+/**
+ * If a node has leading comments.
+ * @param {Node} node The node.
+ * @return {boolean} If the node has leading comments.
+ */
+const hasLeadingComments = node => {
+  if (get(node, 'leadingComments.length')) {
+    return true;
+  }
+
+  const {comments} = node;
+  return comments && comments.some(comment => comment.leading);
+};
+
+/**
+ * If a node is parenthesized.
+ * @param {Node} node The node.
+ * @return {boolean} If the node is parenthesized.
+ */
+const isParenthesized = node => node.parenthesizedExpression || !!get(node, 'extra.parenthesized');
+
+/**
+ * If a node is parenthesized and has leading comments.
+ * @param {Node} node The node.
+ * @return {boolean} If the node is parenthesized and has leading comments.
+ */
+const isParenthesizedWithLeadingComments = node => hasLeadingComments(node) && isParenthesized(node);
+
+/**
+ * Log the file path and line number (if defined).
+ * @param {string} file The file path.
+ * @param {number|undefined} line The line number.
+ */
+const logWarningPrefix = (file, line) => {
+  const lineText = line != null ? (':' + line) : '';
+  process.stdout.write(`${warningText} ${file}${lineText}: `);
+};
+
+/**
+ * Log a warning for the ReturnStatement caveat.
+ * @param {string} file The file path.
+ * @param {number|undefined} line The line number.
+ */
+const logReturnWarning = (file, line) => {
+  logWarningPrefix(file, line);
+  process.stdout.write('JSDoc @type comment removed to avoid a recast formatting issue. Check the diff/build and ' +
+    'determine if the comment should be restored.\n');
+};
+
+/**
+ * Log a warning for the ConditionalExpression caveat.
+ * @param {string} file The file path.
+ * @param {number|undefined} line The line number.
+ */
+const logConditionalWarning = (file, line) => {
+  logWarningPrefix(file, line);
+  process.stdout.write('JSDoc comment block may have been removed from LHS of conditional statement. Check the ' +
+      'diff/build and determine if the comment should be restored.\n');
 };
 
 /**
@@ -17,27 +75,31 @@ const testForJsdocWarning = (file, path) => {
     const parentPath = path.parent;
     const parentNode = parentPath.value;
     if (parentNode.type === 'ObjectExpression' && isParenthesizedWithLeadingComments(parentNode)) {
-      const pParentNode = parentPath.parent ? parentPath.parent.value : undefined;
-      if (pParentNode && pParentNode.type === 'ReturnStatement') {
-        process.stdout.write(
-          colors.yellow('[WARNING] ') +
-          file.path + ':' + pParentNode.loc.start.line + ': ' +
-          'JSDoc comment block may have been moved inside object literal parentheses. Verify diff before proceeding.\n'
-        );
+      const pParentNode = get(parentPath, 'parent.value');
 
+      if (pParentNode && pParentNode.type === 'ReturnStatement') {
+        //
+        // If a return statement starts with a comment, recast will wrap the entire return statement in parens to
+        // "avoid ASI issues". This will break formatting, so remove the comment and warn the developer so they can
+        // determine if the comment is actually required.
+        //
+        // This usually happens when the return value is typed with a JSDoc @type comment.
+        //
+        delete parentNode.comments;
+
+        logReturnWarning(file.path, get(pParentNode, 'loc.start.line'));
         return;
       }
     }
 
-    if (parentNode.type === 'ConditionalExpression' &&
-        (isParenthesizedWithLeadingComments(parentNode.consequent) ||
-        isParenthesizedWithLeadingComments(parentNode.alternate))) {
-      process.stdout.write(
-        colors.yellow('[WARNING] ') +
-        file.path + ':' + parentNode.loc.start.line + ': ' +
-        'JSDoc comment block may have been removed from conditional statement. Verify diff before proceeding.\n'
-      );
-
+    if (parentNode.type === 'ConditionalExpression' && isParenthesizedWithLeadingComments(parentNode.consequent)) {
+      //
+      // If the LHS of a conditional statement is parenthesized with a leading comment, recast will drop the comment.
+      // This seems to be a bug, but I haven't tracked down exactly why this happens. The RHS is not affected.
+      //
+      // This usually happens when the value is typed with a JSDoc @type comment.
+      //
+      logConditionalWarning(file.path, get(parentNode, 'loc.start.line'));
       return;
     }
 
@@ -52,13 +114,13 @@ const testForJsdocWarning = (file, path) => {
  * @param {Object} callOptions The CallExpression matching options, passed to `root.find`.
  * @param {Object} binaryOptions The BinaryExpression options.
  */
-const replaceCallWithBinaryExpression = (file, callOptions, binaryOptions) => {
+module.exports = (file, callOptions, binaryOptions) => {
   const root = jscs(file.source);
 
   // find call expressions matching the provided options
   root.find(jscs.CallExpression, callOptions).forEach(path => {
-    const parentNode = path.parent ? path.parent.node : undefined;
-    const leftSide = path.node.arguments[0];
+    const parentNode = get(path, 'parent.node');
+    const leftSide = get(path, 'node.arguments.0');
 
     if (parentNode && parentNode.type === 'UnaryExpression' && parentNode.operator === '!') {
       // replace `!expression(arg)`
@@ -75,5 +137,3 @@ const replaceCallWithBinaryExpression = (file, callOptions, binaryOptions) => {
 
   return root;
 };
-
-module.exports = replaceCallWithBinaryExpression;

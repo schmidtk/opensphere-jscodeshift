@@ -1,3 +1,12 @@
+/**
+ * @file Replaces `goog.exportProperty` calls with `@export` if possible, falling back to an assignment
+ *               expression.
+ *
+ * @todo
+ *   - Remove `@protected` from functions.
+ *   - Remove `@private` and rename?
+ */
+
 const jscs = require('jscodeshift');
 const get = require('get-value');
 

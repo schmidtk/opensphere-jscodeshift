@@ -1,6 +1,6 @@
 /* eslint-disable */
 /**
- * @fileoverview Test code for replacing goog.isDefAndNotNull.
+ * @file Test code for replacing goog.isDefAndNotNull.
  */
 
 var test1 = someVar != null;
@@ -17,24 +17,24 @@ var castVar = /** @type {!test.Type} */ ({
 });
 
 //
-// This transforms incorrectly because the returned ObjectExpression has both leading comments and is parenthesized.
-// When jscodeshift writes that back out, it incorrectly puts the comment inside the parentheses. A warning should be
-// displayed with the line number in the original file.
+// This transforms incorrectly because the ConditionalExpression LHS has leading comments and is parenthesized. When
+// recast writes that back out, it incorrectly drops the comment but leaves the parentheses.
+//
+// The transform should warn the user that this happened.
 //
 
 var castProperty = someObject['property'] != null ? (someObject['property']) : false;
 
 //
-// This transforms incorrectly because the returned ObjectExpression has both leading comments and is parenthesized.
-// When jscodeshift writes that back out, it incorrectly puts the comment inside the parentheses. A warning should be
-// displayed with the line number in the original file.
+// This transforms incorrectly because the ReturnStatement is followed by leading comments and a parenthesized
+// expression. When recast writes that back out, it incorrectly puts the comment inside the parentheses.
+//
+// The transform should remove the comment and warn the user.
 //
 
 var fn = function(someVar) {
-  return (
-    /** @type {!test.Type} */ {
-      a: someVar != null ? someVar : false,
-      b: false
-    }
-  );
+  return {
+    a: someVar != null ? someVar : false,
+    b: false
+  };
 };

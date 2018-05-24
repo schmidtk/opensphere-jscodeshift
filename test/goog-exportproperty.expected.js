@@ -1,6 +1,6 @@
 /* eslint-disable */
 /**
- * @fileoverview Test code for replacing `goog.exportProperty` with `@export`.
+ * @file Test code for replacing `goog.exportProperty` with `@export`.
  */
 goog.provide('test.Object');
 

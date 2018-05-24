@@ -1,3 +1,7 @@
+/**
+ * @file Replaces `goog.isDefAndNotNull` calls with an equivalent binary expression.
+ */
+
 const callToBinary = require('../scripts/calltobinary');
 
 module.exports = (file, api, options) => {

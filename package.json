@@ -5,7 +5,7 @@
   "scripts": {
     "dryrun": "jscodeshift --dry --print",
     "init": "rimraf .build && mkdirp .build",
-    "inspect": "node --inspect-brk ./node_modules/.bin/jscodeshift -d --run-in-band",
+    "inspect": "node --inspect-brk ./node_modules/.bin/jscodeshift -d -p --run-in-band",
     "lint": "eslint --cache 'transforms/**/*.js' 'scripts/**/*.js'",
     "pretest": "npm run init && mkdirp .build/test && cp -rf test/*.input.js .build/test/ && jscodeshift -t scripts/alltransforms.js .build/test",
     "test": "nyc _mocha -- 'test/*.test.js'",
