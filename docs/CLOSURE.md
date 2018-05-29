@@ -5,6 +5,7 @@
 The following can be replaced by `jscodeshift` transforms in this project:
 
 ```
+goog.bind
 goog.exportProperty
 goog.isDef
 goog.isDefAndNotNull
@@ -12,6 +13,8 @@ goog.isNull
 ```
 
 ## Search/Replace
+
+These can be replaced with a simple search and replace:
 
 | Replace  | With |
 | --- | --- |
@@ -96,7 +99,6 @@ goog.async.DeferredList
 goog.async.Delay
 goog.async.Throttle
 goog.async.nextTick
-goog.bind
 goog.color
 goog.color.Rgb
 goog.color.alpha
@@ -368,7 +370,6 @@ goog.net.XmlHttp.ReadyState.LOADING
 goog.net.jsloader
 goog.net.jsloader.Error
 goog.net.jsloader.safeLoad
-goog.now
 goog.nullFunction
 goog.object
 goog.object.clear

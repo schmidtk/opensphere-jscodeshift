@@ -3,6 +3,7 @@
  */
 
 const jscs = require('jscodeshift');
+const get = require('get-value');
 
 /**
  * If a node is a `goog.bind` call.
@@ -28,7 +29,25 @@ module.exports = (file, api, options) => {
   const root = jscs(file.source);
 
   root.find(jscs.CallExpression, isGoogBind).forEach(path => {
+    const args = path.value.arguments;
+    if (args && args.length > 1) {
+      if (args[0].type === 'FunctionExpression' || args[0].type === 'MemberExpression') {
+        const bindExpression = jscs.memberExpression(args[0], jscs.identifier('bind'));
+        const callExpression = jscs.callExpression(bindExpression, args.slice(1));
 
+        if (args[0].type === 'FunctionExpression') {
+          const pParent = get(path, 'parent.parent.value');
+          const comments = args[0].leadingComments || args[0].comments;
+          if (pParent && pParent.type === 'VariableDeclaration' && comments && comments.length) {
+            delete args[0].comments;
+            delete args[0].leadingComments;
+            pParent.comments = comments;
+          }
+        }
+
+        jscs(path).replaceWith(callExpression);
+      }
+    }
   });
 
   return root.toSource();
