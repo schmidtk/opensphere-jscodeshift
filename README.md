@@ -30,15 +30,7 @@ All modified sources will be dumped in full to the console, so it's highly recom
 
 ## Tests
 
-Tests are generally created by doing the following:
-
-1. Create a test file called `test/my-transform.test.js`.
-2. Create an input file to transform called `test/my-transform.input.js`.
-3. (Optional) Create an expected output file called `test/my-transform.expected.js`.
-
-Running `yarn test` will copy all input files to `.build/test` and run all transforms against them. Tests should compare the result against the expected output.
-
-Note: Please do not run `yarn shift` or `jscodeshift` directly against test files, as it will modify them in-place. Use `yarn test`, which will copy them to `.build/test` and run all transforms against the copies. You can also use `yarn run dryrun` to quickly test the result of a transform against a test file and output the result to the console.
+See the [Unit Testing](https://github.com/facebook/jscodeshift#unit-testing) docs for `jscodeshift` for details on how to add tests for transforms.
 
 ## Debugging
 

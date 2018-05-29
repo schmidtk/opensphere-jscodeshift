@@ -1,18 +1,18 @@
 /**
- * @file Replaces `goog.isNull` calls with an equivalent binary expression.
+ * @file Replaces `goog.isDefAndNotNull` calls with an equivalent binary expression.
  */
 
-const callToBinary = require('../scripts/calltobinary');
+const callToBinary = require('../../scripts/calltobinary');
 
 module.exports = (file, api, options) => {
   const root = callToBinary(file, {
     callee: {
       object: {name: 'goog'},
-      property: {name: 'isNull'}
+      property: {name: 'isDefAndNotNull'}
     }
   }, {
-    expression: '!==',
-    notExpression: '===',
+    expression: '!=',
+    notExpression: '==',
     rightSide: api.jscodeshift.identifier('null')
   });
 
