@@ -73,7 +73,6 @@ goog.array.map
 goog.array.moveItem
 goog.array.reduce
 goog.array.remove
-goog.array.remove.
 goog.array.removeAllIf
 goog.array.removeAt
 goog.array.removeDuplicates
@@ -92,7 +91,6 @@ goog.asserts.assertString
 goog.asserts.fail
 goog.async.ConditionalDelay
 goog.async.Deferred
-goog.async.Deferred.
 goog.async.Deferred.fail
 goog.async.Deferred.succeed
 goog.async.DeferredList
@@ -196,7 +194,6 @@ goog.events.Event
 goog.events.EventId
 goog.events.EventLike
 goog.events.EventTarget
-goog.events.EventTarget.
 goog.events.EventType
 goog.events.EventType.BEFOREUNLOAD
 goog.events.EventType.BLUR
@@ -404,7 +401,6 @@ goog.storage.mechanism.ErrorCode.QUOTA_EXCEEDED
 goog.storage.mechanism.ErrorCode.STORAGE_DISABLED
 goog.storage.mechanism.HTML5LocalStorage
 goog.storage.mechanism.IterableMechanism
-goog.storage.mechanism.IterableMechanism.
 goog.storage.mechanism.Mechanism
 goog.storage.mechanism.PrefixedMechanism
 goog.storage.mechanism.mechanismfactory
