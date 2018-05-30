@@ -10,7 +10,7 @@ const get = require('get-value');
  * @param {Node} node The node.
  * @return {boolean}
  */
-const isGoogBind = function(node) {
+const isGoogBind = node => {
   return node.type === 'CallExpression' && jscs.match(node, {
     callee: {
       object: {name: 'goog'},

@@ -26,7 +26,7 @@ const googExportPropertyFilter = {
  * @param {Node} node The node.
  * @return {boolean}
  */
-const isGEPCall = function(node) {
+const isGEPCall = node => {
   return node.type === 'CallExpression' && jscs.match(node, googExportPropertyFilter);
 };
 
@@ -35,7 +35,7 @@ const isGEPCall = function(node) {
  * @param {Node} node The node.
  * @return {boolean}
  */
-const isExportableCall = function(node) {
+const isExportableCall = node => {
   return isGEPCall(node) && get(node, 'arguments.0.property.name') === 'prototype' &&
       get(node.arguments[1].value) && get(node.arguments[1].value) === get(node.arguments[2].property.name);
 };

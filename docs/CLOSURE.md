@@ -7,9 +7,12 @@ The following can be replaced by `jscodeshift` transforms in this project:
 ```
 goog.bind
 goog.exportProperty
+goog.isBoolean
 goog.isDef
 goog.isDefAndNotNull
 goog.isNull
+goog.isNumber
+goog.isString
 ```
 
 ## Search/Replace
@@ -18,7 +21,18 @@ These can be replaced with a simple search and replace:
 
 | Replace  | With |
 | --- | --- |
+| `goog.array.contains` | `ol.array.includes` |
+| `goog.array.findIndex` | `ol.array.findIndex` |
+| `goog.array.find` | `ol.array.find` |
+| `goog.array.remove` | `ol.array.remove` |
+| `goog.functions.FALSE` | `ol.functions.FALSE` |
+| `goog.functions.TRUE` | `ol.functions.TRUE` |
+| `goog.getUid` | `ol.getUid` |
+| `goog.isArrayLike` | `Array.isArray` |
+| `goog.isArray` | `Array.isArray` |
 | `goog.now` | `Date.now` |
+| `goog.nullFunction` | `ol.nullFunction` |
+| `goog.string.padNumber` | `ol.string.padNumber` |
 
 
 ## TODO
@@ -44,23 +58,18 @@ goog.Uri.QueryData.createFromMap
 goog.Uri.resolve
 goog.abstractMethod
 goog.addSingletonGetter
-goog.array
 goog.array.binaryInsert
 goog.array.binaryRemove
-goog.array.binarySeach_
 goog.array.binarySearch
 goog.array.binarySelect
 goog.array.bucket
 goog.array.clear
 goog.array.clone
-goog.array.contains
 goog.array.defaultCompare
 goog.array.equals
 goog.array.every
 goog.array.extend
 goog.array.filter
-goog.array.find
-goog.array.findIndex
 goog.array.flatten
 goog.array.forEach
 goog.array.indexOf
@@ -72,7 +81,6 @@ goog.array.join
 goog.array.map
 goog.array.moveItem
 goog.array.reduce
-goog.array.remove
 goog.array.removeAllIf
 goog.array.removeAt
 goog.array.removeDuplicates
@@ -83,7 +91,6 @@ goog.array.some
 goog.array.sort
 goog.array.sortObjectsByKey
 goog.array.splice
-goog.asserts
 goog.asserts.assert
 goog.asserts.assertElement
 goog.asserts.assertInstanceof
@@ -97,7 +104,6 @@ goog.async.DeferredList
 goog.async.Delay
 goog.async.Throttle
 goog.async.nextTick
-goog.color
 goog.color.Rgb
 goog.color.alpha
 goog.color.darken
@@ -116,7 +122,6 @@ goog.date.Date
 goog.date.DateLike
 goog.date.DateTime
 goog.date.UtcDateTime
-goog.db
 goog.db.Cursor
 goog.db.Cursor.EventType.COMPLETE
 goog.db.Cursor.EventType.NEW_DATA
@@ -131,7 +136,6 @@ goog.db.Transaction.TransactionMode.READ_ONLY
 goog.db.Transaction.TransactionMode.READ_WRITE
 goog.db.deleteDatabase
 goog.db.openDatabase
-goog.debug
 goog.debug.FancyWindow
 goog.debug.LogManager
 goog.debug.Logger
@@ -140,7 +144,6 @@ goog.define
 goog.disposable.IDisposable
 goog.dispose
 goog.disposeAll
-goog.dom
 goog.dom.NodeType
 goog.dom.NodeType.CDATA_SECTION
 goog.dom.NodeType.ELEMENT
@@ -187,7 +190,6 @@ goog.dom.xml.createDocument
 goog.dom.xml.loadXml
 goog.dom.xml.serialize
 goog.dom.xml.setAttributes
-goog.events
 goog.events.BrowserEvent
 goog.events.BrowserEvent.MouseButton.MIDDLE
 goog.events.Event
@@ -270,9 +272,6 @@ goog.exportSymbol
 goog.format.JsonPrettyPrinter
 goog.fs.FileReader
 goog.fs.FileReader.readAsArrayBuffer
-goog.functions
-goog.functions.FALSE
-goog.functions.TRUE
 goog.functions.and
 goog.fx.AbstractDragDrop.EventType.DRAGEND
 goog.fx.AbstractDragDrop.EventType.DRAGOUT
@@ -281,7 +280,6 @@ goog.fx.AbstractDragDrop.EventType.DRAGSTART
 goog.fx.AbstractDragDrop.EventType.DROP
 goog.fx.DragDrop
 goog.fx.DragDropEvent
-goog.getUid
 goog.html.SafeHtml
 goog.html.SafeHtml.create
 goog.html.SafeHtml.htmlEscape
@@ -293,24 +291,16 @@ goog.html.TrustedResourceUrl.BASE_URL_
 goog.html.TrustedResourceUrl.fromConstant
 goog.i18n.DateTimeFormat
 goog.inherits
-goog.isArray
-goog.isArrayLike
-goog.isBoolean
 goog.isDateLike
 goog.isFunction
-goog.isNumber
 goog.isObject
-goog.isString
-goog.iter
 goog.iter.Iterator
 goog.iter.StopIteration
 goog.iter.filter
 goog.iter.forEach
 goog.iter.toArray
-goog.json
 goog.json.isValid
 goog.labs.userAgent.util
-goog.log
 goog.log.Logger
 goog.log.error
 goog.log.fine
@@ -318,7 +308,6 @@ goog.log.getLogger
 goog.log.hasOwnProperty
 goog.log.info
 goog.log.warning
-goog.math
 goog.math.Box
 goog.math.Coordinate
 goog.math.Coordinate.distance
@@ -367,7 +356,6 @@ goog.net.XmlHttp.ReadyState.LOADING
 goog.net.jsloader
 goog.net.jsloader.Error
 goog.net.jsloader.safeLoad
-goog.nullFunction
 goog.object
 goog.object.clear
 goog.object.clone
@@ -430,7 +418,6 @@ goog.string.newLineToBr
 goog.string.normalizeSpaces
 goog.string.normalizeWhitespace
 goog.string.numerateCompare
-goog.string.padNumber
 goog.string.path
 goog.string.path.extension
 goog.string.regExpEscape

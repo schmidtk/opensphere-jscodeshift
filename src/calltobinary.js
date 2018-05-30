@@ -1,8 +1,6 @@
-const colors = require('colors/safe');
 const get = require('get-value');
 const jscs = require('jscodeshift');
-
-const warningText = colors.yellow('[WARNING]');
+const {logger} = require('./logger');
 
 /**
  * If a node has leading comments.
@@ -37,9 +35,9 @@ const isParenthesizedWithLeadingComments = node => hasLeadingComments(node) && i
  * @param {string} file The file path.
  * @param {number|undefined} line The line number.
  */
-const logWarningPrefix = (file, line) => {
+const getLogWarningPrefix = (file, line) => {
   const lineText = line != null ? (':' + line) : '';
-  process.stdout.write(`${warningText} ${file}${lineText}: `);
+  return `${file}${lineText}: `;
 };
 
 /**
@@ -48,9 +46,10 @@ const logWarningPrefix = (file, line) => {
  * @param {number|undefined} line The line number.
  */
 const logReturnWarning = (file, line) => {
-  logWarningPrefix(file, line);
-  process.stdout.write('JSDoc @type comment removed to avoid a recast formatting issue. Check the diff/build and ' +
-    'determine if the comment should be restored.\n');
+  const message = getLogWarningPrefix(file, line) +
+      'JSDoc @type comment removed to avoid a recast formatting issue. Check the diff/build and ' +
+      'determine if the comment should be restored.'
+  logger.warn(message);
 };
 
 /**
@@ -59,9 +58,10 @@ const logReturnWarning = (file, line) => {
  * @param {number|undefined} line The line number.
  */
 const logConditionalWarning = (file, line) => {
-  logWarningPrefix(file, line);
-  process.stdout.write('JSDoc comment block may have been removed from LHS of conditional statement. Check the ' +
-      'diff/build and determine if the comment should be restored.\n');
+  const message = getLogWarningPrefix(file, line) +
+      'JSDoc comment block may have been removed from LHS of conditional statement. Check the ' +
+      'diff/build and determine if the comment should be restored.'
+  logger.warn(message);
 };
 
 /**
