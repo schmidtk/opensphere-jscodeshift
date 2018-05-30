@@ -25,9 +25,11 @@ These can be replaced with a simple search and replace:
 | `goog.array.findIndex` | `ol.array.findIndex` |
 | `goog.array.find` | `ol.array.find` |
 | `goog.array.remove` | `ol.array.remove` |
+| `goog.debug.expose` | `JSON.stringify` |
 | `goog.functions.FALSE` | `ol.functions.FALSE` |
 | `goog.functions.TRUE` | `ol.functions.TRUE` |
 | `goog.getUid` | `ol.getUid` |
+| `goog.inherits` | `ol.inherits` |
 | `goog.isArrayLike` | `Array.isArray` |
 | `goog.isArray` | `Array.isArray` |
 | `goog.now` | `Date.now` |
@@ -116,7 +118,6 @@ goog.color.lighten
 goog.color.parse
 goog.color.rgbArrayToHex
 goog.color.rgbArrayToHsl
-goog.crypt.hash32
 goog.crypt.hash32.encodeString
 goog.date.Date
 goog.date.DateLike
@@ -139,7 +140,6 @@ goog.db.openDatabase
 goog.debug.FancyWindow
 goog.debug.LogManager
 goog.debug.Logger
-goog.debug.expose
 goog.define
 goog.disposable.IDisposable
 goog.dispose
@@ -156,7 +156,6 @@ goog.dom.TagName.INPUT.toString
 goog.dom.TagName.SPAN
 goog.dom.TagName.TEXTAREA.toString
 goog.dom.ViewportSizeMonitor
-goog.dom.animationFrame.polyfill
 goog.dom.animationFrame.polyfill.install
 goog.dom.append
 goog.dom.classes
@@ -180,12 +179,10 @@ goog.dom.getViewportSize
 goog.dom.insertSiblingBefore
 goog.dom.removeChildren
 goog.dom.removeNode
-goog.dom.safe
 goog.dom.safe.setInnerHtml
 goog.dom.safe.setLocationHref
 goog.dom.safeHtmlToNode
 goog.dom.setTextContent
-goog.dom.xml
 goog.dom.xml.createDocument
 goog.dom.xml.loadXml
 goog.dom.xml.serialize
@@ -290,7 +287,6 @@ goog.html.TrustedResourceUrl
 goog.html.TrustedResourceUrl.BASE_URL_
 goog.html.TrustedResourceUrl.fromConstant
 goog.i18n.DateTimeFormat
-goog.inherits
 goog.isDateLike
 goog.isFunction
 goog.isObject
@@ -353,10 +349,8 @@ goog.net.XmlHttp.ReadyState
 goog.net.XmlHttp.ReadyState.COMPLETE
 goog.net.XmlHttp.ReadyState.INTERACTIVE
 goog.net.XmlHttp.ReadyState.LOADING
-goog.net.jsloader
 goog.net.jsloader.Error
 goog.net.jsloader.safeLoad
-goog.object
 goog.object.clear
 goog.object.clone
 goog.object.containsKey
@@ -393,7 +387,6 @@ goog.storage.mechanism.Mechanism
 goog.storage.mechanism.PrefixedMechanism
 goog.storage.mechanism.mechanismfactory
 goog.storage.mechanism.mechanismfactory.create
-goog.string
 goog.string.Const
 goog.string.Const.create__googStringSecurityPrivate_
 goog.string.Const.from
@@ -430,7 +423,6 @@ goog.string.toTitleCase
 goog.string.trim
 goog.string.truncate
 goog.string.unescapeEntities
-goog.structs
 goog.structs.CircularBuffer
 goog.structs.Collection
 goog.structs.LinkedMap
@@ -442,14 +434,12 @@ goog.style.setWidth
 goog.typeOf
 goog.ui.ColorPicker
 goog.ui.ColorPicker.SIMPLE_GRID_COLORS
-goog.uri.utils
 goog.uri.utils.ComponentIndex.DOMAIN
 goog.uri.utils.ComponentIndex.PATH
 goog.uri.utils.ComponentIndex.PORT
 goog.uri.utils.ComponentIndex.SCHEME
 goog.uri.utils.ComponentIndex.USER_INFO
 goog.uri.utils.split
-goog.userAgent
 goog.userAgent.EDGE
 goog.userAgent.GECKO
 goog.userAgent.IE
@@ -469,6 +459,5 @@ goog.userAgent.product.IE
 goog.userAgent.product.OPERA
 goog.userAgent.product.SAFARI
 goog.userAgent.product.isVersion
-goog.window
 goog.window.open
 ```
