@@ -20,9 +20,9 @@ test.Object = function() {
 
 
 /**
- * Does things.
- * @param {string} param1 Params things.
- * @param {string=} opt_param2 Maybe params things.
+ * Normal use of goog.exportProperty.
+ * @param {string} param1 Required param.
+ * @param {string=} opt_param2 Optional param.
  * @export
  */
 test.Object.prototype.fn1 = function(param1, opt_param2) {
@@ -33,9 +33,9 @@ test.Object.prototype.fn1 = function(param1, opt_param2) {
 
 
 /**
- * Does things too, but not exported.
- * @param {string} param1 Params things.
- * @param {string=} opt_param2 Maybe params things.
+ * Not exported.
+ * @param {string} param1 Required param.
+ * @param {string=} opt_param2 Optional param.
  */
 test.Object.prototype.fn2 = function(param1, opt_param2) {
 
@@ -43,9 +43,9 @@ test.Object.prototype.fn2 = function(param1, opt_param2) {
 
 
 /**
- * Does things as well, and is exported.
- * @param {string} param1 Params things.
- * @param {string=} opt_param2 Maybe params things.
+ * Exported and protected.
+ * @param {string} param1 Required param.
+ * @param {string=} opt_param2 Optional param.
  * @export
  */
 test.Object.prototype.fn3 = function(param1, opt_param2) {
@@ -54,9 +54,9 @@ test.Object.prototype.fn3 = function(param1, opt_param2) {
 
 
 /**
- * Does things also, and exports them to another thing.
- * @param {string} param1 Params things.
- * @param {string=} opt_param2 Maybe params things.
+ * Exported to a different function name.
+ * @param {string} param1 Required param.
+ * @param {string=} opt_param2 Optional param.
  */
 test.Object.prototype.fn4 = function(param1, opt_param2) {
 

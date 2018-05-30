@@ -2,9 +2,7 @@
  * @file Replaces `goog.exportProperty` calls with `@export` if possible, falling back to an assignment
  *               expression.
  *
- * @todo
- *   - Remove `@protected` from functions.
- *   - Remove `@private` and rename?
+ * @todo Remove `@private` annotation and underscore from function name?
  */
 
 const jscs = require('jscodeshift');
@@ -57,9 +55,14 @@ module.exports = (file, api, options) => {
 
       if (prev && prev.type === 'ExpressionStatement' && get(prev.comments.length) > 0) {
         if (prev.comments[prev.comments.length - 1].type === 'CommentBlock') {
-          // add @export to comment block
           const prevComment = prev.comments.pop();
-          const newComment = prevComment.value.replace(/\s+$/, '\n * @export\n ');
+
+          // add @export to comment block
+          let newComment = prevComment.value.replace(/\s+$/, '\n * @export\n ');
+
+          // remove @protected annotation
+          newComment = newComment.replace('\n * @protected', '');
+
           prev.comments.push(jscs.commentBlock(newComment));
 
           // remove the expression
