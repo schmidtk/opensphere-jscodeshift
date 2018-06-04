@@ -109,6 +109,22 @@ const testForJsdocWarning = (file, path) => {
 };
 
 /**
+ * Get the left side of the binary expression.
+ * @param {NodePath} path The call expression node.
+ * @param {Object} options The BinaryExpression options.
+ * @return {Node|undefined} The AST node for the left side of the binary expression.
+ */
+const getLeftSide = (path, options) => {
+  if (typeof options.leftSide === 'function') {
+    return options.leftSide(path);
+  } else if (options.leftSide) {
+    return options.leftSide;
+  }
+
+  return get(path, 'node.arguments.0');
+};
+
+/**
  * Replace a CallExpression with a BinaryExpression.
  * @param {Node} file The root node.
  * @param {Object} callOptions The CallExpression matching options, passed to `root.find`.
@@ -120,18 +136,19 @@ module.exports = (file, callOptions, binaryOptions) => {
   // find call expressions matching the provided options
   root.find(jscs.CallExpression, callOptions).forEach(path => {
     const parentNode = get(path, 'parent.node');
-    const leftSide = get(path, 'node.arguments.0');
+    const leftSide = getLeftSide(path, binaryOptions);
+    if (leftSide) {
+      if (parentNode && parentNode.type === 'UnaryExpression' && parentNode.operator === '!') {
+        // replace `!expression(arg)`
+        jscs(path.parent).replaceWith(pp => jscs.binaryExpression(binaryOptions.notExpression, leftSide, binaryOptions.rightSide));
 
-    if (parentNode && parentNode.type === 'UnaryExpression' && parentNode.operator === '!') {
-      // replace `!expression(arg)`
-      jscs(path.parent).replaceWith(pp => jscs.binaryExpression(binaryOptions.notExpression, leftSide, binaryOptions.rightSide));
+        testForJsdocWarning(file, path);
+      } else {
+        // replace `expression(arg)`
+        jscs(path).replaceWith(pp => jscs.binaryExpression(binaryOptions.expression, leftSide, binaryOptions.rightSide));
 
-      testForJsdocWarning(file, path);
-    } else {
-      // replace `expression(arg)`
-      jscs(path).replaceWith(pp => jscs.binaryExpression(binaryOptions.expression, leftSide, binaryOptions.rightSide));
-
-      testForJsdocWarning(file, path);
+        testForJsdocWarning(file, path);
+      }
     }
   });
 

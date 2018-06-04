@@ -14,6 +14,7 @@ goog.isNull
 goog.isNumber
 goog.isString
 goog.array.clear
+goog.string.contains
 ```
 
 ## Search/Replace
@@ -394,7 +395,6 @@ goog.string.buildString
 goog.string.caseInsensitiveCompare
 goog.string.caseInsensitiveContains
 goog.string.caseInsensitiveEquals
-goog.string.contains
 goog.string.createUniqueString
 goog.string.endsWith
 goog.string.escapeString
