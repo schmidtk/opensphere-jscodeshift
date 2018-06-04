@@ -13,6 +13,7 @@ goog.isDefAndNotNull
 goog.isNull
 goog.isNumber
 goog.isString
+goog.array.clear
 ```
 
 ## Search/Replace
@@ -65,7 +66,6 @@ goog.array.binaryRemove
 goog.array.binarySearch
 goog.array.binarySelect
 goog.array.bucket
-goog.array.clear
 goog.array.clone
 goog.array.defaultCompare
 goog.array.equals
