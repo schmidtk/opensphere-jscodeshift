@@ -14,6 +14,7 @@ goog.isNull
 goog.isNumber
 goog.isString
 goog.array.clear
+goog.array.forEach
 goog.string.contains
 ```
 
@@ -75,7 +76,6 @@ goog.array.every
 goog.array.extend
 goog.array.filter
 goog.array.flatten
-goog.array.forEach
 goog.array.indexOf
 goog.array.insert
 goog.array.insertArrayAt
