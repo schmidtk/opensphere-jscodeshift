@@ -39,7 +39,7 @@ module.exports = (file, api, options) => {
   });
 
   if (expressions.length) {
-    fs.appendFile('./goog-usage', `${expressions.join('\n')}\n`, function(err) {
+    fs.appendFile('./.build/goog-usage', `${expressions.join('\n')}\n`, function(err) {
       if (err) {
         return console.log(err);
       }

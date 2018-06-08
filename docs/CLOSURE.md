@@ -37,6 +37,7 @@ These can be replaced with a simple search and replace:
 | `goog.now` | `Date.now` |
 | `goog.nullFunction` | `ol.nullFunction` |
 | `goog.string.padNumber` | `ol.string.padNumber` |
+| `goog.events.EventType.PROPERTYCHANGE` | `ol.ObjectEventType.PROPERTYCHANGE` |
 
 
 ## TODO

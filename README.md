@@ -41,3 +41,13 @@ yarn run inspect -t <transform> <test file>
 ```
 
 The Node process will automatically attach and break on the first line. Run the process once so all files are loaded, open your transform in Sources, set a breakpoint, then run `yarn run inspect` again.
+
+## Closure Library Usage
+
+To generate a list of `goog.*` usage in a project, use the `usage` script. This generates usage information in `.build/goog-usage` from a base source directory. For example, to run it for OpenSphere you would run:
+
+```
+yarn run usage ../opensphere/src
+```
+
+The output file contains a list of all `goog` uses along with how many times each item is used.

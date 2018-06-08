@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const content = fs.readFileSync(path.resolve(process.cwd(), './goog-usage'), 'utf8').trim();
+const content = fs.readFileSync(path.resolve(process.cwd(), './.build/goog-usage'), 'utf8').trim();
 const usageList = content.split('\n');
 
 const map = {};
@@ -22,7 +22,7 @@ const output = arr.sort((a, b) => a.value > b.value ? -1 : a.value < b.value ? 1
     .map(obj => `${obj.value}: ${obj.key}`)
     .join('\n');
 
-fs.writeFile('./goog-usage', output, function(err) {
+fs.writeFile('./.build/goog-usage', output, function(err) {
   if(err) {
     return console.log(err);
   }
