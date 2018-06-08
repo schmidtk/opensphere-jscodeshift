@@ -40,10 +40,37 @@ These can be replaced with a simple search and replace:
 | `goog.string.padNumber` | `ol.string.padNumber` |
 | `goog.events.EventType.PROPERTYCHANGE` | `ol.ObjectEventType.PROPERTYCHANGE` |
 
+## Closure Library Usage
+
+To generate a list of `goog.*` usage in a project, use the `usage` NPM script. This generates usage information in `.build/goog-usage` from a base source directory. For example, to generate usage for OpenSphere:
+
+```
+yarn run usage ../opensphere/src
+```
+
+The output file contains a list of all `goog.*` references along with how many times each item is used. This does not include comments.
 
 ## TODO
 
-The following still need means to replace:
+### goog.require and goog.provide
+
+These will go last, and the change has to be coordinated with dependent projects. These will eventually be replaced with ES6 modules (import/export), but could possibly be replaced with `goog.module` temporarily to allow a slower transition. More investigation is needed to determine if that will be useful or not.
+
+### Events
+
+The `goog.events` framework is used heavily in OpenSphere, and we will need a replacement. We should look into `ol.events` first and see if it meets our needs.
+
+### Logging
+
+OpenSphere needs a logging framework that at minimum supports log levels, and for full parity needs a logger hierarchy with per-class/namespace/etc levels. A hierarchy is often more complicated than necessary and doesn't seem to get much use, so that can likely be dropped.
+
+[`loglevel`](https://www.npmjs.com/package/loglevel) is a lightweight alternative that's available from NPM. It can be directly imported as an ES6 module but has an ES5 build that OpenSphere can use now. It will require some custom code to log messages to a UI instead of the console, but that seems to be the case for all open source JS loggers.
+
+[`winston`](https://github.com/winstonjs/winston) is the most popular Node.js logging framework. It supports multiple loggers and different transport mechanisms (could be useful for Electron), and is very extensible. v3 (due out June 2018) allegedly has browser support, but there are a few open issues regarding that. The biggest roadblock is that there isn't an ES5 build, so OpenSphere can't use it until it's fully switched over to ES6.
+
+### Full List
+
+The following is an exhaustive list of `goog.*` usage in OpenSphere that does not yet have an alternative.
 
 ```
 goog.DEBUG
