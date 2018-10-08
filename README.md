@@ -2,7 +2,7 @@
 
 Scripts designed to migrate OpenSphere code toward ES6 modules, by performing abstract syntax tree (AST) transforms on JavaScript.
 
-## Usage
+## Running Transforms
 
 Run a transform against a project's source:
 
@@ -22,7 +22,7 @@ All modified sources will be dumped in full to the console, so it's highly recom
 
 ## Development Resources
 
-`jscodemod` is largely a wrapper around [`recast`](https://github.com/benjamn/recast), and neither API is particularly well documented. Learning what's available is generally a practice of looking at existing examples, playing in the debugger, and searching something obscure in Google + 🙏. Below are some resources that may be useful in this process.
+`jscodeshift` is largely a wrapper around [`recast`](https://github.com/benjamn/recast), and neither API is particularly well documented. Learning what's available is generally a practice of looking at existing examples, playing in the debugger, and searching something obscure in Google + 🙏. Below are some resources that may be useful in this process.
 
 - [AST Explorer](http://astexplorer.net/): Shows the abstract syntax tree of your code, and supports running jscodeshift transforms directly and displaying the result.
 - [js-codemod](https://github.com/cpojer/js-codemod/): Codemod scripts to transform code to next generation JS.

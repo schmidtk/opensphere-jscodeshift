@@ -1,8 +1,6 @@
 /**
  * @file Replaces `goog.exportProperty` calls with `@export` if possible, falling back to an assignment
  *               expression.
- *
- * @todo Remove `@private` annotation and underscore from function name?
  */
 
 const jscs = require('jscodeshift');
@@ -34,8 +32,13 @@ const isGEPCall = node => {
  * @return {boolean}
  */
 const isExportableCall = node => {
-  return isGEPCall(node) && get(node, 'arguments.0.property.name') === 'prototype' &&
-      get(node.arguments[1].value) && get(node.arguments[1].value) === get(node.arguments[2].property.name);
+  if (isGEPCall(node) && get(node, 'arguments.0.property.name') === 'prototype') {
+    const exportName = get(node.arguments[1].value);
+    const fnName = get(node.arguments[2].property.name);
+    return exportName && fnName && (exportName == fnName || `${exportName}_` == fnName);
+  }
+
+  return false;
 };
 
 /**
@@ -54,6 +57,10 @@ module.exports = (file, api, options) => {
       const prev = currentIndex > 0 ? programBody[currentIndex - 1] : undefined;
 
       if (prev && prev.type === 'ExpressionStatement' && get(prev.comments.length) > 0) {
+        // strip trailing underscore from private functions
+        // BUG: A recast bug causes this to also drop empty lines above the statement.
+        prev.expression.left.property.name = prev.expression.left.property.name.replace(/_$/, '');
+
         if (prev.comments[prev.comments.length - 1].type === 'CommentBlock') {
           const prevComment = prev.comments.pop();
 
@@ -62,6 +69,9 @@ module.exports = (file, api, options) => {
 
           // remove @protected annotation
           newComment = newComment.replace('\n * @protected', '');
+
+          // remove @private annotation
+          newComment = newComment.replace('\n * @private', '');
 
           prev.comments.push(jscs.commentBlock(newComment));
 

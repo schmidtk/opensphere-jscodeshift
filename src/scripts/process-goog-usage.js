@@ -18,7 +18,7 @@ for (const key in map) {
   });
 }
 
-const output = arr.sort((a, b) => a.value > b.value ? -1 : a.value < b.value ? 1 : 0)
+const output = arr.sort((a, b) => a.value > b.value ? -1 : a.value < b.value ? 1 : a.key > b.key ? -1 : a.key < b.key ? 1 : 0)
     .map(obj => `${obj.value}: ${obj.key}`)
     .join('\n');
 

@@ -55,11 +55,23 @@ goog.exportProperty(test.Object.prototype, 'fn3', test.Object.prototype.fn3);
 
 
 /**
+ * Exported and private.
+ * @param {string} param1 Required param.
+ * @param {string=} opt_param2 Optional param.
+ * @private
+ */
+test.Object.prototype.fn4_ = function(param1, opt_param2) {
+
+};
+goog.exportProperty(test.Object.prototype, 'fn4', test.Object.prototype.fn4_);
+
+
+/**
  * Exported to a different function name.
  * @param {string} param1 Required param.
  * @param {string=} opt_param2 Optional param.
  */
-test.Object.prototype.fn4 = function(param1, opt_param2) {
+test.Object.prototype.fn5 = function(param1, opt_param2) {
 
 };
-goog.exportProperty(test.Object.prototype, 'notFn4', test.Object.prototype.fn4);
+goog.exportProperty(test.Object.prototype, 'notFn5', test.Object.prototype.fn5);
