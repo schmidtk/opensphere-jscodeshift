@@ -51,6 +51,8 @@ test.Object.prototype.fn2 = function(param1, opt_param2) {
 test.Object.prototype.fn3 = function(param1, opt_param2) {
 
 };
+
+
 /**
  * Exported and private.
  * @param {string} param1 Required param.

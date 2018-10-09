@@ -68,9 +68,7 @@ module.exports = (file, api, options) => {
         prev.expression.left.property.name = prev.expression.left.property.name.replace(/_$/, '');
 
         if (prev.comments[prev.comments.length - 1].type === 'CommentBlock') {
-          const prevComment = prev.comments.pop();
-
-          let newComment = prevComment.value;
+          let newComment = prev.comments.pop().value;
 
           // add @export to comment block unless already present
           if (!newComment.includes('@export')) {
