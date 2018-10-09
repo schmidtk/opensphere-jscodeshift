@@ -70,8 +70,12 @@ module.exports = (file, api, options) => {
         if (prev.comments[prev.comments.length - 1].type === 'CommentBlock') {
           const prevComment = prev.comments.pop();
 
-          // add @export to comment block
-          let newComment = prevComment.value.replace(/\s+$/, '\n * @export\n ');
+          let newComment = prevComment.value;
+
+          // add @export to comment block unless already present
+          if (!newComment.includes('@export')) {
+            newComment = newComment.replace(/\s+$/, '\n * @export\n ');
+          }
 
           // remove @protected annotation
           newComment = newComment.replace('\n * @protected', '');
