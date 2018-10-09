@@ -28,7 +28,9 @@
     "winston": "^3.0.0-rc6"
   },
   "jest": {
-    "setupFiles": ["./src/testsetup"],
+    "setupFiles": [
+      "./src/testsetup"
+    ],
     "roots": [
       "src/transforms"
     ]

@@ -7,6 +7,13 @@ const jscs = require('jscodeshift');
 const get = require('get-value');
 
 /**
+ * Regular expression to remove placeholder comment for removed statements.
+ * @type {RegExp}
+ * @const
+ */
+const REMOVE_REGEXP = /\/\*JSCS-REMOVE\*\/;\n/g;
+
+/**
  * Filter object for matching a `goog.exportProperty` CallExpression node.
  * @type {Object}
  */
@@ -58,7 +65,6 @@ module.exports = (file, api, options) => {
 
       if (prev && prev.type === 'ExpressionStatement' && get(prev.comments.length) > 0) {
         // strip trailing underscore from private functions
-        // BUG: A recast bug causes this to also drop empty lines above the statement.
         prev.expression.left.property.name = prev.expression.left.property.name.replace(/_$/, '');
 
         if (prev.comments[prev.comments.length - 1].type === 'CommentBlock') {
@@ -76,7 +82,9 @@ module.exports = (file, api, options) => {
           prev.comments.push(jscs.commentBlock(newComment));
 
           // remove the expression
-          jscs(path).remove();
+          // WORKAROUND: A recast bug may cause this to drop all blank lines after the statement. As a workaround,
+          // replace the statement with a comment block and remove it later.
+          jscs(path).replaceWith(jscs.commentBlock('JSCS-REMOVE'));
         }
       }
     }
@@ -88,5 +96,5 @@ module.exports = (file, api, options) => {
     jscs(path).replaceWith(pp => jscs.assignmentExpression('=', leftSide, path.node.arguments[2]));
   });
 
-  return root.toSource();
+  return root.toSource().replace(REMOVE_REGEXP, '');
 };
