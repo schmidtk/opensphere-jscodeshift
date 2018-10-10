@@ -48,7 +48,8 @@ const getLogWarningPrefix = (file, line) => {
 const logReturnWarning = (file, line) => {
   const message = getLogWarningPrefix(file, line) +
       'JSDoc @type comment removed to avoid a recast formatting issue. Check the diff/build and ' +
-      'determine if the comment should be restored.'
+      'determine if the comment should be restored.\n' +
+      'See https://github.com/benjamn/recast/issues/508.';
   logger.warn(message);
 };
 
@@ -60,7 +61,8 @@ const logReturnWarning = (file, line) => {
 const logConditionalWarning = (file, line) => {
   const message = getLogWarningPrefix(file, line) +
       'JSDoc comment block may have been removed from LHS of conditional statement. Check the ' +
-      'diff/build and determine if the comment should be restored.'
+      'diff/build and determine if the comment should be restored.\n' +
+      'See https://github.com/benjamn/recast/issues/509.';
   logger.warn(message);
 };
 
