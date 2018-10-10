@@ -30,7 +30,7 @@
   },
   "jest": {
     "setupFiles": [
-      "./src/testsetup"
+      "./src/utils/testsetup"
     ],
     "roots": [
       "src/transforms"

@@ -3,7 +3,7 @@
  */
 
 const jscs = require('jscodeshift');
-const callToBinary = require('../../../calltobinary');
+const callToBinary = require('../../../utils/calltobinary');
 
 /**
  * If a node is a `goog.string.contains` call.

@@ -2,7 +2,8 @@
  * @file Replaces `goog.isBoolean` calls with an equivalent binary expression.
  */
 
-const callToBinary = require('../../calltobinary');
+const callToBinary = require('../../utils/calltobinary');
+const prependTypeof = require('../../utils/prependtypeof');
 
 module.exports = (file, api, options) => {
   const root = callToBinary(file, {
@@ -11,8 +12,9 @@ module.exports = (file, api, options) => {
       property: {name: 'isBoolean'}
     }
   }, {
-    expression: '!=',
-    notExpression: '==',
+    expression: '===',
+    notExpression: '!==',
+    leftSide: prependTypeof,
     rightSide: api.jscodeshift.literal('boolean')
   });
 

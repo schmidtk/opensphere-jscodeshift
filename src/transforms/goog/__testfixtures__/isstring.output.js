@@ -3,16 +3,16 @@
  * @file Test code for replacing goog.isString.
  */
 
-var test1 = someVar != 'string';
-var test2 = someObject.someProperty != 'string';
-var test3 = someObject[someProperty] != 'string';
+var test1 = typeof someVar === 'string';
+var test2 = typeof someObject.someProperty === 'string';
+var test3 = typeof someObject[someProperty] === 'string';
 
-var notTest1 = someVar == 'string';
-var notTest2 = someObject.someProperty == 'string';
-var notTest3 = someObject[someProperty] == 'string';
+var notTest1 = typeof someVar !== 'string';
+var notTest2 = typeof someObject.someProperty !== 'string';
+var notTest3 = typeof someObject[someProperty] !== 'string';
 
 var castVar = /** @type {!test.Type} */ ({
-  a: someVar != 'string' ? someVar : '',
+  a: typeof someVar === 'string' ? someVar : '',
   b: false
 });
 
@@ -23,7 +23,7 @@ var castVar = /** @type {!test.Type} */ ({
 // The transform should warn the user that this happened.
 //
 
-var castProperty = someObject['property'] != 'string' ? (someObject['property']) : '';
+var castProperty = typeof someObject['property'] === 'string' ? (someObject['property']) : '';
 
 //
 // This transforms incorrectly because the ReturnStatement is followed by leading comments and a parenthesized
@@ -34,7 +34,7 @@ var castProperty = someObject['property'] != 'string' ? (someObject['property'])
 
 var fn = function(someVar) {
   return {
-    a: someVar != 'string' ? someVar : '',
+    a: typeof someVar === 'string' ? someVar : '',
     b: false
   };
 };

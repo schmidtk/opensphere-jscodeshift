@@ -2,7 +2,7 @@
  * @file Replaces `goog.isDef` calls with an equivalent binary expression.
  */
 
-const callToBinary = require('../../calltobinary');
+const callToBinary = require('../../utils/calltobinary');
 
 module.exports = (file, api, options) => {
   const root = callToBinary(file, {
