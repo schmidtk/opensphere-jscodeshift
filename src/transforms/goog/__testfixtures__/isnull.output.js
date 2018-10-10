@@ -3,16 +3,16 @@
  * @file Test code for replacing goog.isNull.
  */
 
-var test1 = someVar !== null;
-var test2 = someObject.someProperty !== null;
-var test3 = someObject[someProperty] !== null;
+var test1 = someVar === null;
+var test2 = someObject.someProperty === null;
+var test3 = someObject[someProperty] === null;
 
-var notTest1 = someVar === null;
-var notTest2 = someObject.someProperty === null;
-var notTest3 = someObject[someProperty] === null;
+var notTest1 = someVar !== null;
+var notTest2 = someObject.someProperty !== null;
+var notTest3 = someObject[someProperty] !== null;
 
 var castVar = /** @type {!test.Type} */ ({
-  a: someVar !== null ? someVar : false,
+  a: someVar === null ? someVar : false,
   b: false
 });
 
@@ -23,7 +23,7 @@ var castVar = /** @type {!test.Type} */ ({
 // The transform should warn the user that this happened.
 //
 
-var castProperty = someObject['property'] !== null ? (someObject['property']) : false;
+var castProperty = someObject['property'] === null ? (someObject['property']) : false;
 
 //
 // This transforms incorrectly because the ReturnStatement is followed by leading comments and a parenthesized
@@ -34,7 +34,7 @@ var castProperty = someObject['property'] !== null ? (someObject['property']) : 
 
 var fn = function(someVar) {
   return {
-    a: someVar !== null ? someVar : false,
+    a: someVar === null ? someVar : false,
     b: false
   };
 };

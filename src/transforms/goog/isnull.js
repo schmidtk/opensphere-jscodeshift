@@ -11,8 +11,8 @@ module.exports = (file, api, options) => {
       property: {name: 'isNull'}
     }
   }, {
-    expression: '!==',
-    notExpression: '===',
+    expression: '===',
+    notExpression: '!==',
     rightSide: api.jscodeshift.identifier('null')
   });
 
