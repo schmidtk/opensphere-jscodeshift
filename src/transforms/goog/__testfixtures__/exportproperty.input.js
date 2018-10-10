@@ -38,7 +38,10 @@ goog.exportProperty(test.Object.prototype, 'fn1', test.Object.prototype.fn1);
  * @param {string=} opt_param2 Optional param.
  */
 test.Object.prototype.fn2 = function(param1, opt_param2) {
+  this.fn4_('arg');
 
+  var boundFn4 = this.fn4_.bind(this);
+  boundFn4('arg1', 'arg2');
 };
 
 
