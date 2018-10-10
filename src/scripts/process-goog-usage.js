@@ -1,31 +1,40 @@
+/* eslint-disable no-console */
+
 const fs = require('fs');
 const path = require('path');
 
 const content = fs.readFileSync(path.resolve(process.cwd(), './.build/goog-usage'), 'utf8').trim();
 const usageList = content.split('\n');
 
-const map = {};
+const googRefMap = {};
+let totalRefs = 0;
+
 usageList.forEach(key => {
-  map[key] = map[key] || 0;
-  map[key]++;
+  googRefMap[key] = googRefMap[key] || 0;
+  googRefMap[key]++;
+  totalRefs++;
 });
 
-const arr = [];
-for (const key in map) {
-  arr.push({
-    key: key,
-    value: map[key]
+const googRefArray = [];
+for (const key in googRefMap) {
+  googRefArray.push({
+    refName: key,
+    refCount: googRefMap[key]
   });
 }
 
-const output = arr.sort((a, b) => a.value > b.value ? -1 : a.value < b.value ? 1 : a.key > b.key ? -1 : a.key < b.key ? 1 : 0)
-    .map(obj => `${obj.value}: ${obj.key}`)
+// default sort function
+const sortValues = (a, b) => a > b ? -1 : a < b ? 1 : 0;
+
+// sort by count then by name
+const googCallSort = (a, b) => sortValues(a.refCount, b.refCount) || sortValues(a.refName, b.refName);
+
+const output = `Total references: ${totalRefs}\n\n` + googRefArray.sort(googCallSort)
+    .map(obj => `${obj.refCount}: ${obj.refName}`)
     .join('\n');
 
 fs.writeFile('./.build/goog-usage', output, function(err) {
-  if(err) {
-    return console.log(err);
-  }
+  if (err) return console.log(err);
 
-  console.log("The file was saved!");
+  console.log('The file was saved!');
 });

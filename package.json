@@ -4,7 +4,8 @@
   "description": "Scripts designed to migrate OpenSphere code toward ES6 modules.",
   "scripts": {
     "dryrun": "jscodeshift --dry --print",
-    "usage": "rm -rf .build/goog-usage* && mkdir -p .build && yarn run usage:gen && yarn run usage:process",
+    "usage": "yarn run usage:init && yarn run usage:gen $SRC_DIR && yarn run usage:process",
+    "usage:init": "rm -rf .build && mkdirp .build",
     "usage:gen": "jscodeshift --dry -t src/scripts/generate-goog-usage.js",
     "usage:process": "node src/scripts/process-goog-usage.js",
     "init": "rimraf .build && mkdirp .build",

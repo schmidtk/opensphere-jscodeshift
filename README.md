@@ -2,6 +2,16 @@
 
 [`jscodeshift`](https://github.com/facebook/jscodeshift) scripts designed to migrate OpenSphere code toward ES6 modules, by performing abstract syntax tree (AST) transforms on JavaScript.
 
+## Generating Usage Info
+
+To generate a listing of Closure Library usage in a source directory:
+
+```
+SRC_DIR=<root dir> yarn run usage
+```
+
+This will create `.build/goog-usage`, with a list of `goog.*` references and their ref counts.
+
 ## Running Transforms
 
 Run a transform against a project's source:
