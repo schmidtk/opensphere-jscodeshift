@@ -14,9 +14,11 @@ goog.isNull
 goog.isNumber
 goog.isString
 goog.array.clear
+goog.array.contains
 goog.array.find
 goog.array.findIndex
 goog.array.forEach
+goog.array.remove
 goog.string.contains
 ```
 
@@ -26,8 +28,6 @@ These can be replaced with a simple search and replace:
 
 | Replace  | With |
 | --- | --- |
-| `goog.array.contains` | `ol.array.includes` |
-| `goog.array.remove` | `ol.array.remove` |
 | `goog.debug.expose` | `JSON.stringify` |
 | `goog.functions.FALSE` | `ol.functions.FALSE` |
 | `goog.functions.TRUE` | `ol.functions.TRUE` |

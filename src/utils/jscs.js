@@ -1,17 +1,17 @@
 const jscs = require('jscodeshift');
+const googUtil = require('./goog');
 
 /**
  * Bind a callback argument to a `this` argument.
  * @param {Array} args The arguments.
  * @return {Array} The arguments, with the callback bound.
  */
-const bindArgs = args => {
-  if (args.length === 3) {
-    // if a third argument was passed to goog.array.find, bind the compare function to it
-    const bindExpression = jscs.memberExpression(args[1], jscs.identifier('bind'));
-    const callExpression = jscs.callExpression(bindExpression, [args[2]]);
-    args = [args[0], callExpression];
-  }
+const bindArgs = (args, indices) => {
+  // assume the last two arguments are the callback and the "this" arg
+  const bindExpression = jscs.memberExpression(args[indices[0]], jscs.identifier('bind'));
+  const callExpression = jscs.callExpression(bindExpression, [args[indices[1]]]);
+  args.length = args.length - 2;
+  args.push(callExpression);
 
   return args;
 };
@@ -39,7 +39,61 @@ const createCall = (path, args) => {
   return jscs.callExpression(memberExpression, args);
 };
 
+/**
+ * Create a Node find function to locate a call expression by path (ie, `goog.array.find`).
+ * @param {string} path The call function path.
+ * @return {function(Node):boolean}
+ */
+const createFindCallFn = path => {
+  const pathParts = Array.isArray(path) ? path : path.split('.');
+  const calleeMatch = pathParts.reduce((obj, current, idx, arr) => {
+    if (arr.length > idx + 1) {
+      if (!obj) {
+        obj = {
+          object: {name: arr[idx]},
+          property: {name: arr[idx + 1]}
+        };
+      } else {
+        obj = {
+          object: obj,
+          property: {name: arr[idx + 1]}
+        };
+      }
+    }
+
+    return obj;
+  }, undefined);
+
+  const matchObj = {callee: calleeMatch};
+  return node => node.type === 'CallExpression' && jscs.match(node, matchObj);
+};
+
+/**
+ * Replace a function call with another.
+ * @param {Node} root The root node.
+ * @param {Object} options The replace options.
+ */
+const replaceFunction = (root, options) => {
+  const findFn = createFindCallFn(options.replace);
+  root.find(jscs.CallExpression, findFn).forEach(path => {
+    let args = path.value.arguments;
+    if (options.bindArgs && args.length > options.bindArgs[1]) {
+      args = bindArgs(path.value.arguments, options.bindArgs);
+    }
+
+    if (args && (!options.requiredArgs || args.length >= options.requiredArgs)) {
+      jscs(path).replaceWith(createCall(options.with, args));
+
+      if (options.googRequire) {
+        googUtil.addRequire(root, options.googRequire);
+      }
+    }
+  });
+};
+
 module.exports = {
   bindArgs: bindArgs,
-  createCall: createCall
+  createCall: createCall,
+  createFindCallFn: createFindCallFn,
+  replaceFunction: replaceFunction
 }
