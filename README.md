@@ -17,7 +17,7 @@ This will create `.build/goog-usage`, with a list of `goog.*` references and the
 Run a transform against a project's source:
 
 ```
-yarn run shift -t transforms/<transform>.js <input>
+yarn run shift -t src/transforms/<transform>.js <input>
 ```
 
 The input parameter can either be a single file, or a directory. Directories will be searched recursively for JavaScript files and all files will be modified.
@@ -25,7 +25,7 @@ The input parameter can either be a single file, or a directory. Directories wil
 By default, `jscodeshift` will modify input files in-place. To skip changing files and output the result of changes to the console:
 
 ```
-yarn run dryrun -t transforms/<transform>.js <input>
+yarn run dryrun -t src/transforms/<transform>.js <input>
 ```
 
 All modified sources will be dumped in full to the console, so it's highly recommended to only do this on individual files instead of entire directories.
