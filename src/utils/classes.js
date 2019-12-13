@@ -11,7 +11,19 @@ const CTOR_COMMENT_REGEXP = /@ngInject/;
  * Match comments that should be put in the constructor function.
  * @type {RegExp}
  */
-const COMMENT_IGNORE_REGEXP = /@(constructor|extends)/;
+const COMMENT_IGNORE_REGEXP = /@constructor/;
+
+/**
+ * Match @extends JSDoc.
+ * @type {RegExp}
+ */
+const EXTENDS = /@extends/;
+
+/**
+ * Match @extends JSDoc with a generic type provided.
+ * @type {RegExp}
+ */
+const EXTENDS_GENERIC = /@extends {.+<.+>}/;
 
 /**
  * Adds a method to a class.
@@ -99,6 +111,10 @@ const splitCommentsForClass = (comment) => {
     }
 
     if (COMMENT_IGNORE_REGEXP.test(trimmed)) {
+      // drop blacklisted comment
+      continue;
+    } else if (EXTENDS.test(trimmed) && !EXTENDS_GENERIC.test(trimmed)) {
+      // drop @extends unless it provides a generic type
       continue;
     } else if (trimmed.startsWith('* @param') || inParam) {
       ctorCommentParts.push(part);
