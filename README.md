@@ -35,8 +35,9 @@ All modified sources will be dumped in full to the console, so it's highly recom
 [`jscodeshift`](https://github.com/facebook/jscodeshift) is largely a wrapper around [`recast`](https://github.com/benjamn/recast). The `jscodeshift` repo has some API documentation available and links to a few other resources, but to some extent learning to use it will require browsing their code and a bit of Googling. Below are some resources that may be useful in this process.
 
 - [AST Explorer](http://astexplorer.net/): Shows the abstract syntax tree of your code, and supports running jscodeshift transforms directly and displaying the result.
-- [js-codemod](https://github.com/cpojer/js-codemod/): Codemod scripts to transform code to next generation JS.
-- [js-transforms](https://github.com/jhgg/js-transforms): Some documented codemod experiments to help you learn.
+- [awesome-jscodeshift](https://github.com/sejoker/awesome-jscodeshift): Compilation of `jscodeshift` resources.
+- [jscodeshift](https://github.com/facebook/jscodeshift): Facebook's repository for `jscodeshift`.
+- [List of API calls](https://github.com/RReverser/esprima_ast_explorer/blob/master/website/src/defs/jscodeshift.json): The closest thing to an API I could find for creating AST objects with JSCS.
 
 ## Tests
 
