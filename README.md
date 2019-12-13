@@ -36,7 +36,6 @@ All modified sources will be dumped in full to the console, so it's highly recom
 
 - [AST Explorer](http://astexplorer.net/): Shows the abstract syntax tree of your code, and supports running jscodeshift transforms directly and displaying the result.
 - [awesome-jscodeshift](https://github.com/sejoker/awesome-jscodeshift): Compilation of `jscodeshift` resources.
-- [jscodeshift](https://github.com/facebook/jscodeshift): Facebook's repository for `jscodeshift`.
 - [List of API calls](https://github.com/RReverser/esprima_ast_explorer/blob/master/website/src/defs/jscodeshift.json): The closest thing to an API I could find for creating AST objects with JSCS.
 
 ## Tests
