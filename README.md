@@ -44,10 +44,10 @@ See the [Unit Testing](https://github.com/facebook/jscodeshift#unit-testing) doc
 
 ## Debugging
 
-To inspect transforms, load `chrome://inspect`, click `Open dedicated DevTools for Node`, then run:
+To inspect transforms, add a `debugger` statement wherever you would like to set a breakpoint. Load `chrome://inspect`, click `Open dedicated DevTools for Node`, then run:
 
 ```
 yarn run inspect -t <transform> <test file>
 ```
 
-The Node process will automatically attach and break on the first line. Run the process once so all files are loaded, open your transform in Sources, set a breakpoint, then run `yarn run inspect` again.
+The Node process will automatically attach and break on the first line. Run the process and it will hit your first `debugger` statement.

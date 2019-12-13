@@ -71,8 +71,9 @@ const sortRequires = root => {
   });
 };
 
-
 module.exports = {
   addRequire: addRequire,
+  isGoogProvide: isGoogProvide,
+  isGoogRequire: isGoogRequire,
   sortRequires: sortRequires
 };
