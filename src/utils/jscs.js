@@ -45,8 +45,17 @@ const createCall = (path, args) => {
  * @return {function(Node):boolean}
  */
 const createFindCallFn = path => {
-  const pathParts = Array.isArray(path) ? path : path.split('.');
-  const calleeMatch = pathParts.reduce((obj, current, idx, arr) => {
+  return node => node.type === 'CallExpression' && jscs.match(node, {callee: createFindMemberExprObject(path)});
+};
+
+/**
+ * Create an object to find a member expression.
+ * @param {string} memberPath The dot delimited member expression path.
+ * @return {Object}
+ */
+const createFindMemberExprObject = (memberPath) => {
+  const pathParts = Array.isArray(memberPath) ? memberPath : memberPath.split('.');
+  return pathParts.reduce((obj, current, idx, arr) => {
     if (arr.length > idx + 1) {
       if (!obj) {
         obj = {
@@ -63,9 +72,6 @@ const createFindCallFn = path => {
 
     return obj;
   }, undefined);
-
-  const matchObj = {callee: calleeMatch};
-  return node => node.type === 'CallExpression' && jscs.match(node, matchObj);
 };
 
 /**
@@ -95,5 +101,6 @@ module.exports = {
   bindArgs: bindArgs,
   createCall: createCall,
   createFindCallFn: createFindCallFn,
+  createFindMemberExprObject: createFindMemberExprObject,
   replaceFunction: replaceFunction
 }

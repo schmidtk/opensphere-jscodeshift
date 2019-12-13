@@ -4,10 +4,7 @@ module.exports = {
     "node": true
   },
   "parserOptions": {
-    "ecmaVersion": 6,
-    "ecmaFeatures": {
-      "experimentalObjectRestSpread": true
-    }
+    "ecmaVersion": 2018
   },
   "rules": {
     // require let/const, and prefer const

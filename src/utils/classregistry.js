@@ -21,6 +21,6 @@ const registerClassNode = (moduleName, node) => {
 };
 
 module.exports = {
-  getClassNode: getClassNode,
-  registerClassNode: registerClassNode
+  getClassNode,
+  registerClassNode
 };

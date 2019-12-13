@@ -1,70 +1,11 @@
 const jscs = require('jscodeshift');
-const {createCall, createFindCallFn} = require('../../utils/jscs');
-const {registerClassNode, getClassNode} = require('./classregistry');
+const {addLegacyNamespace} = require('../../utils/goog');
+const {createCall, createFindCallFn, createFindMemberExprObject} = require('../../utils/jscs');
+const {addMethodToClass, addStaticGetToClass, isClosureClass, isPrivate, splitCommentsForClass} = require('../../utils/classes');
+const {registerClassNode, getClassNode} = require('../../utils/classregistry');
+const {logger} = require('../../utils/logger');
 
 let root;
-
-/**
- * Create an object to find a member expression.
- * @param {string} memberPath The dot delimited member expression path.
- * @return {Object}
- */
-const createMemberExpression = (memberPath) => {
-  const parts = memberPath.split('.').reverse();
-  const result = {};
-
-  let current = result;
-  while (parts.length) {
-    current.property = {
-      name: parts.shift()
-    }
-
-    if (parts.length > 1) {
-      current.type = 'MemberExpression';
-      current = current.object = {}
-    } else {
-      current.object = {
-        name: parts.shift(),
-        type: 'Identifier'
-      }
-    }
-  }
-
-  return result;
-};
-
-/**
- * Adds a method to a class.
- */
-const addMethodToClass = (moduleName, methodName, methodValue, isStatic) => {
-  let classMethod;
-
-  const classDef = getClassNode(moduleName);
-  if (classDef) {
-    classMethod = jscs.methodDefinition('method', jscs.identifier(methodName), methodValue, isStatic);
-    classDef.body.body.push(classMethod);
-  }
-
-  return classMethod;
-};
-
-/**
- * Move a static class property to a static get function.
- */
-const addStaticGetToClass = (path, moduleName) => {
-  const classDef = getClassNode(moduleName);
-  if (classDef) {
-    const propertyName = path.value.left.property.name;
-
-    const getBlock = jscs.blockStatement([jscs.returnStatement(path.value.right)]);
-    const getFn = jscs.functionExpression(null, [], getBlock);
-    const staticGet = jscs.methodDefinition('get', jscs.identifier(propertyName), getFn, true);
-    staticGet.comments = path.parent.value.comments;
-    classDef.body.body.push(staticGet);
-
-    jscs(path).remove();
-  }
-};
 
 /**
  * Insert the node prior to the named class declaration.
@@ -76,11 +17,6 @@ const insertBeforeClass = (className, node) => {
 };
 
 /**
- * Filter unused annotations from local private properties.
- */
-const filterLocalPropertyComment = comment => !(/^\* @(private|const)$/.test(comment.trim()));
-
-/**
  * Convert a private static property on the class to a local variable.
  */
 const convertPrivateClassPropertyToConst = (path, moduleName) => {
@@ -89,7 +25,7 @@ const convertPrivateClassPropertyToConst = (path, moduleName) => {
   const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
 
   const newComment = path.parent.value.comments.pop().value.split('\n')
-      .filter(filterLocalPropertyComment)
+      .filter(comment => !(/^\* @(private|const)$/.test(comment.trim())))
       .join('\n');
 
   varDeclaration.comments = [jscs.commentBlock(newComment)];
@@ -105,16 +41,9 @@ const convertPrivateClassPropertyToConst = (path, moduleName) => {
   }
 
   // replace local references to the expression
-  root.find(jscs.MemberExpression, createMemberExpression(`${moduleName}.${propertyName}`)).forEach(path => {
+  root.find(jscs.MemberExpression, createFindMemberExprObject(`${moduleName}.${propertyName}`)).forEach(path => {
     jscs(path).replaceWith(jscs.identifier(propertyName));
   });
-};
-
-/**
- * If a node is marked private in its comments.
- */
-const isPrivate = (path) => {
-  return path.parent.value.comments.length && path.parent.value.comments[0].value.indexOf('@private') > -1;
 };
 
 /**
@@ -126,71 +55,31 @@ const convertStaticProperty = (path, moduleName) => {
     classMethod.comments = path.parent.value.comments;
 
     jscs(path).remove();
-  } else if (isPrivate(path)) {
+  } else if (isPrivate(path.parent.value)) {
     convertPrivateClassPropertyToConst(path, moduleName);
   } else {
     addStaticGetToClass(path, moduleName);
   }
 };
 
-/**
- * Match comments that should be put in the constructor function.
- * @type {RegExp}
- */
-const CTOR_COMMENT_REGEXP = /@ngInject/;
+const movePrototypeToClass = (path, moduleName) => {
+  const propertyName = path.value.left.property.name;
+  if (path.value.right.type === 'FunctionExpression') {
+    const classMethod = addMethodToClass(moduleName, propertyName, path.value.right, false);
+    classMethod.comments = path.parent.value.comments;
 
-/**
- * Split a comment into parts for the class and constructor.
- * @param {string} comment The original class comment.
- * @return {{classComment: string, ctorComment: string}}
- */
-const splitCommentsForClass = (comment) => {
-  const origParts = comment.split('\n');
-  const classCommentParts = ['*'];
-  const ctorCommentParts = ['*', ' * Constructor.'];
-
-  let inParam = false;
-  for (let i = 0; i < origParts.length; i++) {
-    const part = origParts[i];
-    const trimmed = part.trim();
-
-    if (trimmed === '*') {
-      // skip blank lines, and also assume a @param definition is finished
-      inParam = false;
-      continue;
-    }
-
-    if (inParam && !trimmed.startsWith('*   ')) {
-      // assume multi-line params are indented at least two extra spaces
-      inParam = false;
-    }
-
-    if (trimmed.startsWith('* @constructor')) {
-      // ignore @constructor annotation
-      continue;
-    } else if (trimmed.startsWith('* @param') || inParam) {
-      ctorCommentParts.push(part);
-      inParam = true;
-    } else if (CTOR_COMMENT_REGEXP.test(trimmed)) {
-      ctorCommentParts.push(part);
-    }else {
-      classCommentParts.push(part);
-    }
+    jscs(path).remove();
+  } else {
+    logger.warn(`In ${moduleName}: Unable to move property ${propertyName}. Value is not a function.`);
   }
-
-  ctorCommentParts.push(' ');
-
-  return {
-    classComment: classCommentParts.join('\n'),
-    ctorComment: ctorCommentParts.join('\n')
-  };
 };
 
-const movePrototypeToClass = (path, moduleName) => {
-  const classMethod = addMethodToClass(moduleName, path.value.left.property.name, path.value.right, false);
-  classMethod.comments = path.parent.value.comments;
-
-  jscs(path).remove();
+const moveInheritsToClass = (path, moduleName) => {
+  const classDef = getClassNode(moduleName);
+  if (classDef) {
+    classDef.superClass = path.value.arguments[1];
+    jscs(path).remove();
+  }
 };
 
 const moveSingletonToClass = (path, moduleName) => {
@@ -256,7 +145,7 @@ const convertClass = (path, moduleName) => {
   root.find(jscs.AssignmentExpression, {
     left: {
       type: 'MemberExpression',
-      object: createMemberExpression(`${moduleName}.prototype`)
+      object: createFindMemberExprObject(`${moduleName}.prototype`)
     }
   }).forEach(path => movePrototypeToClass(path, moduleName));
 
@@ -264,15 +153,21 @@ const convertClass = (path, moduleName) => {
   root.find(jscs.AssignmentExpression, {
     left: {
       type: 'MemberExpression',
-      object: createMemberExpression(moduleName)
+      object: createFindMemberExprObject(moduleName)
     }
   }).forEach(path => convertStaticProperty(path, moduleName));
 
   // move goog.addSingletonGetter to a class getInstance function
   root.find(jscs.CallExpression, {
-    callee: createMemberExpression('goog.addSingletonGetter'),
-    arguments: [createMemberExpression(moduleName)]
+    callee: createFindMemberExprObject('goog.addSingletonGetter'),
+    arguments: [createFindMemberExprObject(moduleName)]
   }).forEach(path => moveSingletonToClass(path, moduleName));
+
+  // move goog.inherits to class extends keyword
+  root.find(jscs.CallExpression, {
+    callee: createFindMemberExprObject('goog.inherits'),
+    arguments: [createFindMemberExprObject(moduleName)]
+  }).forEach(path => moveInheritsToClass(path, moduleName));
 
   // add exports statement for the class
   addExports(path.parent.parent.value, className);
@@ -281,35 +176,29 @@ const convertClass = (path, moduleName) => {
 module.exports = (file, api, options) => {
   root = jscs(file.source);
 
-  let declareLegacyAdded = false;
   const modules = [];
 
   // replace all goog.provide statements with goog.module
   const findFn = createFindCallFn('goog.provide');
-  root.find(jscs.CallExpression, findFn).forEach(path => {
+  root.find(jscs.CallExpression, findFn).forEach((path, idx, paths) => {
     const args = path.value.arguments;
     modules.push(args[0].value);
 
     jscs(path).replaceWith(createCall('goog.module', args));
 
-    if (!declareLegacyAdded) {
-      const googModule = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier('module'));
-      const callee = jscs.memberExpression(googModule, jscs.identifier('declareLegacyNamespace'));
-      const call = jscs.callExpression(callee, []);
-      path.parent.insertAfter(jscs.expressionStatement(call));
-
-      declareLegacyAdded = true;
+    if (!idx) {
+      addLegacyNamespace(path.parent);
     }
   });
 
   modules.forEach(moduleName => {
     root.find(jscs.AssignmentExpression, {
-      left: createMemberExpression(moduleName),
+      left: createFindMemberExprObject(moduleName),
       right: {
         type: 'FunctionExpression'
       }
     }).forEach(path => {
-      if (path.parent.value.comments[0].value.indexOf('@constructor') > -1) {
+      if (isClosureClass(path.parent.value)) {
         convertClass(path, moduleName);
       }
     });
