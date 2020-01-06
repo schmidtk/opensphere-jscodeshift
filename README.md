@@ -34,7 +34,7 @@ All modified sources will be dumped in full to the console, so it's highly recom
 
 [`jscodeshift`](https://github.com/facebook/jscodeshift) is largely a wrapper around [`recast`](https://github.com/benjamn/recast). The `jscodeshift` repo has some API documentation available and links to a few other resources, but to some extent learning to use it will require browsing their code and a bit of Googling. Below are some resources that may be useful in this process.
 
-- [AST Explorer](http://astexplorer.net/): Shows the abstract syntax tree of your code, and supports running jscodeshift transforms directly and displaying the result.
+- [AST Explorer](http://astexplorer.net/): Shows the abstract syntax tree of your code, and supports running jscodeshift transforms directly and displaying the result. Set the parser (`</>` button) to `esprima`, the parser used by `recast`.
 - [awesome-jscodeshift](https://github.com/sejoker/awesome-jscodeshift): Compilation of `jscodeshift` resources.
 - [List of API calls](https://github.com/RReverser/esprima_ast_explorer/blob/master/website/src/defs/jscodeshift.json): The closest thing to an API I could find for creating AST objects with JSCS.
 
