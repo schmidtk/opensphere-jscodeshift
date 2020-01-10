@@ -2,7 +2,7 @@ const jscs = require('jscodeshift');
 const {addLegacyNamespace} = require('../../utils/goog');
 const {createCall, createFindCallFn, createFindMemberExprObject} = require('../../utils/jscs');
 const {convertClass, isClosureClass} = require('../../utils/classes');
-const sourceOptions = require('../../utils/sourceoptions');
+const {getDefaultSourceOptions} = require('../../utils/sourceoptions');
 
 module.exports = (file, api, options) => {
   const root = jscs(file.source);
@@ -34,5 +34,5 @@ module.exports = (file, api, options) => {
     });
   });
 
-  return root.toSource(sourceOptions);
+  return root.toSource(getDefaultSourceOptions());
 };

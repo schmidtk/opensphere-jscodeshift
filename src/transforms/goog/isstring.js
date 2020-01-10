@@ -4,7 +4,7 @@
 
 const callToBinary = require('../../utils/calltobinary');
 const prependTypeof = require('../../utils/prependtypeof');
-const sourceOptions = require('../../utils/sourceoptions');
+const {getDefaultSourceOptions} = require('../../utils/sourceoptions');
 
 module.exports = (file, api, options) => {
   const root = callToBinary(file, {
@@ -20,5 +20,5 @@ module.exports = (file, api, options) => {
   });
 
   // print
-  return root.toSource(sourceOptions);
+  return root.toSource(getDefaultSourceOptions());
 };
