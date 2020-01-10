@@ -29,6 +29,54 @@ const isGoogProvide = node => {
 };
 
 /**
+ * If a node represents a Closure class constructor.
+ * @param {Node} node The node.
+ * @return {boolean}
+ */
+const isClosureClass = node => {
+  if (node && node.comments && node.comments.length === 1) {
+    return node.comments[0].value.indexOf('@constructor') > -1;
+  }
+  return false;
+};
+
+/**
+ * If a node represents a Closure class constructor.
+ * @param {Node} node The node.
+ * @return {boolean}
+ */
+const isControllerClass = node => {
+  if (isClosureClass(node)) {
+    return node.comments[0].value.indexOf('@ngInject') > -1;
+  }
+  return false;
+};
+
+/**
+ * If a node represents a Closure class constructor.
+ * @param {Node} node The node.
+ * @return {boolean}
+ */
+const isDirective = node => {
+  if (node && node.comments && node.comments.length === 1) {
+    return node.comments[0].value.indexOf('angular.Directive') > -1;
+  }
+  return false;
+};
+
+/**
+ * If a node is marked private in its comments.
+ * @param {Node} node The node.
+ * @return {boolean}
+ */
+const isPrivate = (node) => {
+  if (node && node.comments && node.comments.length === 1) {
+    return node.comments[0].value.indexOf('@private') > -1;
+  }
+  return false;
+};
+
+/**
  * Add a goog.declareLegacyNamespace statement after a node.
  * @param {Node} node The node.
  */
@@ -87,5 +135,9 @@ module.exports = {
   addRequire,
   isGoogProvide,
   isGoogRequire,
+  isClosureClass,
+  isControllerClass,
+  isDirective,
+  isPrivate,
   sortRequires
 };

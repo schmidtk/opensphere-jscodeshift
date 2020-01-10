@@ -1,7 +1,8 @@
 const jscs = require('jscodeshift');
 const {addLegacyNamespace} = require('../../utils/goog');
 const {createCall, createFindCallFn, createFindMemberExprObject} = require('../../utils/jscs');
-const {convertClass, isClosureClass} = require('../../utils/classes');
+const {convertClass} = require('../../utils/classes');
+const {isClosureClass, isControllerClass, isDirective} = require('../../utils/goog');
 const {getDefaultSourceOptions} = require('../../utils/sourceoptions');
 
 module.exports = (file, api, options) => {
@@ -28,11 +29,20 @@ module.exports = (file, api, options) => {
         type: 'FunctionExpression'
       }
     }).forEach(path => {
-      if (isClosureClass(path.parent.value)) {
+      if (isDirective(path.parent.value)) {
+        // TODO: convert directive
+      } else if (isControllerClass(path.parent.value)) {
+        // TODO: properly convert UI controller
         convertClass(root, path, moduleName);
+      } else if (isClosureClass(path.parent.value)) {
+        convertClass(root, path, moduleName);
+      } else {
+        // TODO: convert other namespace
       }
     });
   });
+
+  // TODO: create shim for new controller/directive. this should *not* happen during tests or dry runs.
 
   return root.toSource(getDefaultSourceOptions());
 };

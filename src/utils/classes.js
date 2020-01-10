@@ -1,5 +1,6 @@
 const jscs = require('jscodeshift');
 const {getClassNode, registerClassNode} = require('./classregistry');
+const {isPrivate} = require('./goog');
 const {createFindCallFn, createFindMemberExprObject, memberExpressionToString} = require('./jscs');
 const {logger} = require('./logger');
 
@@ -65,30 +66,6 @@ const addStaticGetToClass = (path, moduleName) => {
 
     jscs(path).remove();
   }
-};
-
-/**
- * If a node represents a Closure class constructor.
- * @param {Node} node The node.
- * @return {boolean}
- */
-const isClosureClass = node => {
-  if (node && node.comments && node.comments.length === 1) {
-    return node.comments[0].value.indexOf('@constructor') > -1;
-  }
-  return false;
-}
-
-/**
- * If a node is marked private in its comments.
- * @param {Node} node The node.
- * @return {boolean}
- */
-const isPrivate = (node) => {
-  if (node && node.comments && node.comments.length === 1) {
-    return node.comments[0].value.indexOf('@private') > -1;
-  }
-  return false;
 };
 
 /**
@@ -396,7 +373,5 @@ module.exports = {
   addMethodToClass,
   addStaticGetToClass,
   convertClass,
-  isClosureClass,
-  isPrivate,
   splitCommentsForClass
 };
