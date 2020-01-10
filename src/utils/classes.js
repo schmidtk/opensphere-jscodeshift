@@ -207,15 +207,17 @@ const convertPrototypeExpression = (path, moduleName) => {
     jscs(path).remove();
   } else if (valueType === 'MemberExpression') {
     // convert in place, replacing the module name with the class name (ClassName.prototype.propertyName = value)
-    const classDef = getClassNode(moduleName);
-    if (classDef) {
-      path.value.left.object.object = jscs.identifier(classDef.id.name);
-    }
+    replaceFQClass(path.value.left.object, moduleName);
   } else {
     logger.warn(`In ${moduleName}: Unable to convert prototype expression ${propertyName} of type ${valueType}.`);
   }
 };
 
+/**
+ * Move a `goog.inherits` expression to the class extends syntax.
+ * @param {NodePath} path Path to the goog.inherits expression.
+ * @param {string} moduleName The module name.
+ */
 const moveInheritsToClass = (path, moduleName) => {
   const classDef = getClassNode(moduleName);
   if (classDef) {
@@ -224,6 +226,23 @@ const moveInheritsToClass = (path, moduleName) => {
   }
 };
 
+/**
+ * Replace a fully-qualified class member expression with the class name, for local references.
+ * @param {Node} node The member expression.
+ * @param {string} moduleName The module name.
+ */
+const replaceFQClass = (node, moduleName) => {
+  const classDef = getClassNode(moduleName);
+  if (classDef) {
+    node.object = jscs.identifier(classDef.id.name);
+  }
+};
+
+/**
+ * Move a `goog.addSingletonInstance` call to a static get on the class.
+ * @param {NodePath} path The path.
+ * @param {string} moduleName The module name.
+ */
 const moveSingletonToClass = (path, moduleName) => {
   const classDef = getClassNode(moduleName);
   if (classDef) {
@@ -354,6 +373,10 @@ const convertClass = (root, path, moduleName) => {
     callee: createFindMemberExprObject('goog.inherits'),
     arguments: [createFindMemberExprObject(moduleName)]
   }).forEach(path => moveInheritsToClass(path, moduleName));
+
+  // replace references to the fully qualified class name with the local class reference
+  root.find(jscs.MemberExpression, createFindMemberExprObject(moduleName))
+      .forEach(path => jscs(path).replaceWith(jscs.identifier(className)))
 
   // add exports statement for the class
   addExports(path.parent.parent.value, className);

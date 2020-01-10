@@ -52,7 +52,7 @@ class MyClass extends os.ns.ParentClass {
    * @return {boolean}
    */
   memberFn(arg1, opt_arg2) {
-    if (arg1 === os.ns.MyClass.CONSTANT) {
+    if (arg1 === MyClass.CONSTANT) {
       return true;
     }
 
@@ -89,6 +89,9 @@ class MyClass extends os.ns.ParentClass {
     return 'Hello';
   }
 }
+
+os.implements(MyClass, os.ns.ISomeInterface.ID);
+os.implements(MyClass, os.ns.IAnotherInterface.ID);
 
 
 /**

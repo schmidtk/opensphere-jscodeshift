@@ -35,7 +35,8 @@ os.ns.MyClass = function(arg1, arg2, opt_arg3) {
   this.prop3_ = '!!!';
 };
 goog.inherits(os.ns.MyClass, os.ns.ParentClass);
-
+os.implements(os.ns.MyClass, os.ns.ISomeInterface.ID);
+os.implements(os.ns.MyClass, os.ns.IAnotherInterface.ID);
 
 /**
  * A constant on the class.
