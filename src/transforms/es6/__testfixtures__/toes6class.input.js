@@ -38,6 +38,24 @@ goog.inherits(os.ns.MyClass, os.ns.ParentClass);
 os.implements(os.ns.MyClass, os.ns.ISomeInterface.ID);
 os.implements(os.ns.MyClass, os.ns.IAnotherInterface.ID);
 
+
+/**
+ * Class name registered with OpenSphere.
+ * @type {string}
+ * @const
+ */
+os.ns.MyClass.NAME = 'os.ns.MyClass';
+os.registerClass(os.ns.MyClass.NAME, os.ns.MyClass);
+
+
+/**
+ * A private constant on the class that references the class.
+ * @type {goog.log.Logger}
+ * @private
+ * @const
+ */
+os.ns.MyClass.LOGGER_ = goog.log.getLogger(os.ns.MyClass.CONSTANT);
+
 /**
  * A constant on the class.
  * @type {string}
@@ -53,15 +71,6 @@ os.ns.MyClass.CONSTANT = 'Hello';
  * @const
  */
 os.ns.MyClass.PRIVATE_CONSTANT_ = 'World';
-
-
-/**
- * A private constant on the class that references the class.
- * @type {goog.log.Logger}
- * @private
- * @const
- */
-os.ns.MyClass.LOGGER_ = goog.log.getLogger(os.ns.MyClass.CONSTANT);
 
 
 /**

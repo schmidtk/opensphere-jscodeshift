@@ -83,6 +83,14 @@ class MyClass extends os.ns.ParentClass {
   }
 
   /**
+   * Class name registered with OpenSphere.
+   * @type {string}
+   */
+  static get NAME() {
+    return 'os.ns.MyClass';
+  }
+
+  /**
    * A constant on the class.
    * @type {string}
    */
@@ -93,6 +101,9 @@ class MyClass extends os.ns.ParentClass {
 
 os.implements(MyClass, os.ns.ISomeInterface.ID);
 os.implements(MyClass, os.ns.IAnotherInterface.ID);
+
+
+os.registerClass(MyClass.NAME, MyClass);
 
 
 /**
