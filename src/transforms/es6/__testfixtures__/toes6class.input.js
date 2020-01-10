@@ -46,13 +46,22 @@ os.ns.MyClass.CONSTANT = 'Hello';
 
 
 /**
+ * A private constant on the class.
+ * @type {string}
+ * @private
+ * @const
+ */
+os.ns.MyClass.PRIVATE_CONSTANT_ = 'World';
+
+
+/**
  * A function on the class.
  * @param {string} arg1 First arg.
  * @param {number=} opt_arg2 Optional second arg.
  * @return {boolean}
  */
 os.ns.MyClass.prototype.memberFn = function(arg1, opt_arg2) {
-  if (arg1) {
+  if (arg1 === os.ns.MyClass.CONSTANT) {
     return true;
   }
 
@@ -65,4 +74,21 @@ os.ns.MyClass.prototype.memberFn = function(arg1, opt_arg2) {
  */
 os.ns.MyClass.prototype.overrideFn = function(arg1, opt_arg2) {
   return os.ns.MyClass.base(this, 'overrideFn', arg1);
+};
+
+
+/**
+ * @inheritDoc
+ */
+os.ns.MyClass.prototype.oldOverrideFn = function(arg1, opt_arg2) {
+  return os.ns.MyClass.superClass_.oldOverrideFn.call(this, arg1);
+};
+
+
+/**
+ * @inheritDoc
+ */
+os.ns.MyClass.prototype.oldOverrideDifferentClass = function(arg1, opt_arg2) {
+  // can't convert due to difference in class
+  return os.ns.AnotherClass.superClass_.oldOverrideDifferentClass.call(this, arg1);
 };

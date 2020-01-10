@@ -56,22 +56,45 @@ const createFindCallFn = path => {
 const createFindMemberExprObject = (memberPath) => {
   const pathParts = Array.isArray(memberPath) ? memberPath : memberPath.split('.');
   return pathParts.reduce((obj, current, idx, arr) => {
-    if (arr.length > idx + 1) {
-      if (!obj) {
+    if (!obj) {
+      if (arr.length > idx + 1) {
         obj = {
           object: {name: arr[idx]},
           property: {name: arr[idx + 1]}
         };
       } else {
         obj = {
-          object: obj,
-          property: {name: arr[idx + 1]}
-        };
+          property: {name: arr[idx]}
+        }
       }
+    } else if (arr.length > idx + 1) {
+      obj = {
+        object: obj,
+        property: {name: arr[idx + 1]}
+      };
     }
 
     return obj;
   }, undefined);
+};
+
+/**
+ * Convert a MemberExpression node to a string.
+ * @param {Node} node The node.
+ * @return {string} The member expression string.
+ */
+const memberExpressionToString = (node) => {
+  const parts = [];
+  while(node.type === 'MemberExpression') {
+    parts.push(node.property.name);
+    node = node.object;
+  }
+
+  if (node.type === 'Identifier') {
+    parts.push(node.name);
+  }
+
+  return parts.reverse().join('.');
 };
 
 /**
@@ -102,5 +125,6 @@ module.exports = {
   createCall: createCall,
   createFindCallFn: createFindCallFn,
   createFindMemberExprObject: createFindMemberExprObject,
+  memberExpressionToString: memberExpressionToString,
   replaceFunction: replaceFunction
 }

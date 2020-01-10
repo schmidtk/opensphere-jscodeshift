@@ -1,6 +1,6 @@
 const jscs = require('jscodeshift');
 const {getClassNode, registerClassNode} = require('./classregistry');
-const {createFindMemberExprObject} = require('./jscs');
+const {createFindCallFn, createFindMemberExprObject, memberExpressionToString} = require('./jscs');
 const {logger} = require('./logger');
 
 /**
@@ -146,7 +146,7 @@ const splitCommentsForClass = (comment) => {
  */
 const insertBeforeClass = (root, className, node) => {
   root.find(jscs.ClassDeclaration, {id: {name: className}}).forEach(path => {
-    jscs(path.parent).insertBefore(node);
+    jscs(path).insertBefore(node);
   });
 };
 
@@ -256,6 +256,42 @@ const addExports = (program, keys) => {
   program.body.push(jscs.expressionStatement(assignment));
 };
 
+const replaceBaseWithSuper = (path, moduleName) => {
+  const args = path.value.arguments;
+  if (args[1].type === 'Literal') {
+    const fnName = args[1].value;
+    const superArgs = args.slice(2);
+
+    let superCall;
+    if (fnName === 'constructor') {
+      superCall = jscs.callExpression(jscs.super(), superArgs);
+    } else {
+      const superMember = jscs.memberExpression(jscs.super(), jscs.identifier(fnName), false);
+      superCall = jscs.callExpression(superMember, superArgs);
+    }
+
+    if (superCall) {
+      jscs(path).replaceWith(superCall);
+    }
+  }
+};
+
+const replaceSuperclassWithSuper = (path, moduleName) => {
+  // superClass_ -> fn -> "call" member -> call expression
+  const callExpr = path.parent.parent.parent;
+  const fnName = path.parent.value.property.name;
+  const className = memberExpressionToString(path.value.object);
+  if (className === moduleName) {
+    // classes match, convert to super
+    const superMember = jscs.memberExpression(jscs.super(), jscs.identifier(fnName), false);
+    const superArgs = callExpr.value.arguments.slice(1);
+    const superCall = jscs.callExpression(superMember, superArgs);
+    jscs(callExpr).replaceWith(superCall);
+  } else {
+    logger.warn(`In ${moduleName}: Found superClass_ call to another class (${className}).`);
+  }
+};
+
 const convertClass = (root, path, moduleName) => {
   const className = path.value.left.property.name;
 
@@ -282,6 +318,14 @@ const convertClass = (root, path, moduleName) => {
       object: createFindMemberExprObject(`${moduleName}.prototype`)
     }
   }).forEach(path => movePrototypeToClass(path, moduleName));
+
+  // replace all <class>.base calls with super
+  root.find(jscs.CallExpression, createFindCallFn(`${moduleName}.base`))
+      .forEach(path => replaceBaseWithSuper(path, moduleName));
+
+  // replace all <class>.superClass_ calls with super
+  root.find(jscs.MemberExpression, createFindMemberExprObject(`superClass_`))
+      .forEach(path => replaceSuperclassWithSuper(path, moduleName));
 
   // move all static properties to the class
   root.find(jscs.AssignmentExpression, {

@@ -6,6 +6,12 @@ goog.require('os.ns.ParentClass');
 
 
 /**
+ * A private constant on the class.
+ * @type {string}
+ */
+const PRIVATE_CONSTANT_ = 'World';
+
+/**
  * Class description.
  */
 class MyClass extends os.ns.ParentClass {
@@ -16,7 +22,7 @@ class MyClass extends os.ns.ParentClass {
    * @param {boolean=} opt_arg3 Optional arg.
    */
   constructor(arg1, arg2, opt_arg3) {
-    os.ns.MyClass.base(this, 'constructor', arg1, arg2);
+    super(arg1, arg2);
 
     /**
      * A public property on the class.
@@ -46,7 +52,7 @@ class MyClass extends os.ns.ParentClass {
    * @return {boolean}
    */
   memberFn(arg1, opt_arg2) {
-    if (arg1) {
+    if (arg1 === os.ns.MyClass.CONSTANT) {
       return true;
     }
 
@@ -57,7 +63,22 @@ class MyClass extends os.ns.ParentClass {
    * @inheritDoc
    */
   overrideFn(arg1, opt_arg2) {
-    return os.ns.MyClass.base(this, 'overrideFn', arg1);
+    return super.overrideFn(arg1);
+  }
+
+  /**
+   * @inheritDoc
+   */
+  oldOverrideFn(arg1, opt_arg2) {
+    return super.oldOverrideFn(arg1);
+  }
+
+  /**
+   * @inheritDoc
+   */
+  oldOverrideDifferentClass(arg1, opt_arg2) {
+    // can't convert due to difference in class
+    return os.ns.AnotherClass.superClass_.oldOverrideDifferentClass.call(this, arg1);
   }
 
   /**
