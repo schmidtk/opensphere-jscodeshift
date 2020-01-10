@@ -196,15 +196,23 @@ const convertStaticProperty = (root, path, moduleName) => {
   }
 };
 
-const movePrototypeToClass = (path, moduleName) => {
+const convertPrototypeExpression = (path, moduleName) => {
   const propertyName = path.value.left.property.name;
-  if (path.value.right.type === 'FunctionExpression') {
+  const valueType = path.value.right.type;
+  if (valueType === 'FunctionExpression') {
+    // move functions to the class
     const classMethod = addMethodToClass(moduleName, propertyName, path.value.right, false);
     classMethod.comments = path.parent.value.comments;
 
     jscs(path).remove();
+  } else if (valueType === 'MemberExpression') {
+    // convert in place, replacing the module name with the class name (ClassName.prototype.propertyName = value)
+    const classDef = getClassNode(moduleName);
+    if (classDef) {
+      path.value.left.object.object = jscs.identifier(classDef.id.name);
+    }
   } else {
-    logger.warn(`In ${moduleName}: Unable to move property ${propertyName}. Value is not a function.`);
+    logger.warn(`In ${moduleName}: Unable to convert prototype expression ${propertyName} of type ${valueType}.`);
   }
 };
 
@@ -317,7 +325,7 @@ const convertClass = (root, path, moduleName) => {
       type: 'MemberExpression',
       object: createFindMemberExprObject(`${moduleName}.prototype`)
     }
-  }).forEach(path => movePrototypeToClass(path, moduleName));
+  }).forEach(path => convertPrototypeExpression(path, moduleName));
 
   // replace all <class>.base calls with super
   root.find(jscs.CallExpression, createFindCallFn(`${moduleName}.base`))

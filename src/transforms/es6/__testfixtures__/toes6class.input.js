@@ -92,3 +92,9 @@ os.ns.MyClass.prototype.oldOverrideDifferentClass = function(arg1, opt_arg2) {
   // can't convert due to difference in class
   return os.ns.AnotherClass.superClass_.oldOverrideDifferentClass.call(this, arg1);
 };
+
+
+/**
+ * @inheritDoc
+ */
+os.ns.MyClass.prototype.overrideToExpression = goog.nullFunction;

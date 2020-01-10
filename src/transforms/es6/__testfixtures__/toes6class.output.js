@@ -90,4 +90,9 @@ class MyClass extends os.ns.ParentClass {
   }
 }
 
+
+/**
+ * @inheritDoc
+ */
+MyClass.prototype.overrideToExpression = goog.nullFunction;
 exports = MyClass;
