@@ -1,7 +1,7 @@
 const jscs = require('jscodeshift');
 const {getClassNode, registerClassNode} = require('./classregistry');
-const {isPrivate} = require('./goog');
-const {createFindCallFn, createFindMemberExprObject, memberExpressionToString} = require('./jscs');
+const {addLegacyNamespace, isPrivate} = require('./goog');
+const {createCall, createFindCallFn, createFindMemberExprObject, memberExpressionToString} = require('./jscs');
 const {logger} = require('./logger');
 
 /**
@@ -306,6 +306,28 @@ const replaceSuperclassWithSuper = (path, moduleName) => {
   }
 };
 
+/**
+ * Replace all goog.provide statements with goog.module
+ * @param {NodePath} root The root node.
+ * @return {!Array<string>} List of modules in the file.
+ */
+const replaceProvidesWithModules = (root) => {
+  const modules = [];
+  const findFn = createFindCallFn('goog.provide');
+  root.find(jscs.CallExpression, findFn).forEach((path, idx, paths) => {
+    const args = path.value.arguments;
+    modules.push(args[0].value);
+
+    jscs(path).replaceWith(createCall('goog.module', args));
+
+    if (!idx) {
+      addLegacyNamespace(path.parent);
+    }
+  });
+
+  return modules;
+};
+
 const convertClass = (root, path, moduleName) => {
   const className = path.value.left.property.name;
 
@@ -373,5 +395,6 @@ module.exports = {
   addMethodToClass,
   addStaticGetToClass,
   convertClass,
+  replaceProvidesWithModules,
   splitCommentsForClass
 };
