@@ -53,6 +53,7 @@ class MyClass extends os.ns.ParentClass {
    */
   memberFn(arg1, opt_arg2) {
     if (arg1 === MyClass.CONSTANT) {
+      goog.log.fine(LOGGER_, 'Some message');
       return true;
     }
 
@@ -98,4 +99,11 @@ os.implements(MyClass, os.ns.IAnotherInterface.ID);
  * @inheritDoc
  */
 MyClass.prototype.overrideToExpression = goog.nullFunction;
+
+/**
+ * A private constant on the class that references the class.
+ * @type {goog.log.Logger}
+ */
+const LOGGER_ = goog.log.getLogger(MyClass.CONSTANT);
+
 exports = MyClass;

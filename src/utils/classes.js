@@ -166,9 +166,18 @@ const convertPrivateClassPropertyToConst = (root, path, moduleName) => {
 
   const classDef = getClassNode(moduleName);
   if (classDef) {
-    // move prior to the class definition
-    insertBeforeClass(root, classDef.id.name, varDeclaration);
-    jscs(path.parent).remove();
+    if (jscs(varDeclarator).find(jscs.MemberExpression, createFindMemberExprObject(moduleName)).length) {
+      // references the class, move to the end of the file
+      const program = root.find(jscs.Program).get();
+      if (program) {
+        program.value.body.push(varDeclaration);
+        jscs(path.parent).remove();
+      }
+    } else {
+      // move prior to the class definition
+      insertBeforeClass(root, classDef.id.name, varDeclaration);
+      jscs(path.parent).remove();
+    }
   } else {
     // replace in the same position
     jscs(path.parent).replaceWith(varDeclaration);
@@ -292,6 +301,7 @@ const replaceBaseWithSuper = (path, moduleName) => {
     let superCall;
     if (fnName === 'constructor') {
       superCall = jscs.callExpression(jscs.super(), superArgs);
+      // TODO: detect "this" before super and log a warning
     } else {
       const superMember = jscs.memberExpression(jscs.super(), jscs.identifier(fnName), false);
       superCall = jscs.callExpression(superMember, superArgs);

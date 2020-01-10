@@ -56,6 +56,15 @@ os.ns.MyClass.PRIVATE_CONSTANT_ = 'World';
 
 
 /**
+ * A private constant on the class that references the class.
+ * @type {goog.log.Logger}
+ * @private
+ * @const
+ */
+os.ns.MyClass.LOGGER_ = goog.log.getLogger(os.ns.MyClass.CONSTANT);
+
+
+/**
  * A function on the class.
  * @param {string} arg1 First arg.
  * @param {number=} opt_arg2 Optional second arg.
@@ -63,6 +72,7 @@ os.ns.MyClass.PRIVATE_CONSTANT_ = 'World';
  */
 os.ns.MyClass.prototype.memberFn = function(arg1, opt_arg2) {
   if (arg1 === os.ns.MyClass.CONSTANT) {
+    goog.log.fine(os.ns.MyClass.LOGGER_, 'Some message');
     return true;
   }
 
