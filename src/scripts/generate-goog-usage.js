@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const jscs = require('jscodeshift');
+const sourceOptions = require('../utils/sourceoptions');
 
 /**
  * Find all `goog.*` expressions in a file.
@@ -31,7 +32,7 @@ module.exports = (file, api, options) => {
       delete path.value.comments;
       delete path.value.leadingComments;
 
-      const srcStr = jscs(path).toSource();
+      const srcStr = jscs(path).toSource(sourceOptions);
       if (srcStr.indexOf('/**') !== -1) {
         console.log(file.path);
       } else {
@@ -48,5 +49,5 @@ module.exports = (file, api, options) => {
     });
   }
 
-  return root.toSource();
+  return root.toSource(sourceOptions);
 };

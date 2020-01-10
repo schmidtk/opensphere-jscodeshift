@@ -4,6 +4,7 @@
 
 const jscs = require('jscodeshift');
 const get = require('get-value');
+const sourceOptions = require('../../utils/sourceoptions');
 
 /**
  * If a node is a `goog.bind` call.
@@ -50,5 +51,5 @@ module.exports = (file, api, options) => {
     }
   });
 
-  return root.toSource({quote: 'single'});
+  return root.toSource(sourceOptions);
 };

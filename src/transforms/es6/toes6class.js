@@ -2,6 +2,7 @@ const jscs = require('jscodeshift');
 const {addLegacyNamespace} = require('../../utils/goog');
 const {createCall, createFindCallFn, createFindMemberExprObject} = require('../../utils/jscs');
 const {convertClass, isClosureClass} = require('../../utils/classes');
+const sourceOptions = require('../../utils/sourceoptions');
 
 module.exports = (file, api, options) => {
   const root = jscs(file.source);
@@ -33,8 +34,5 @@ module.exports = (file, api, options) => {
     });
   });
 
-  return root.toSource({
-    tabWidth: 2,
-    useTabs: false
-  });
+  return root.toSource(sourceOptions);
 };

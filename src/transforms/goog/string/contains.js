@@ -4,6 +4,7 @@
 
 const jscs = require('jscodeshift');
 const callToBinary = require('../../../utils/calltobinary');
+const sourceOptions = require('../../../utils/sourceoptions');
 
 /**
  * If a node is a `goog.string.contains` call.
@@ -55,5 +56,5 @@ module.exports = (file, api, options) => {
   });
 
   // print
-  return root.toSource();
+  return root.toSource(sourceOptions);
 };

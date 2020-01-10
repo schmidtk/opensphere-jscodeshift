@@ -4,6 +4,7 @@
 
 const jscs = require('jscodeshift');
 const jscsUtil = require('../../../utils/jscs');
+const sourceOptions = require('../../../utils/sourceoptions');
 
 /**
  * Replace `goog.array` calls with equivalent `ol.array` calls.
@@ -43,5 +44,5 @@ module.exports = (file, api, options) => {
     googRequire: 'ol.array'
   });
 
-  return root.toSource({quote: 'single'});
+  return root.toSource(sourceOptions);
 };
