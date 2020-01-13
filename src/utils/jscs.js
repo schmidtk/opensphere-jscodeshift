@@ -23,19 +23,7 @@ const bindArgs = (args, indices) => {
  * @return {Node} The call expression node.
  */
 const createCall = (path, args) => {
-  const pathParts = Array.isArray(path) ? path : path.split('.');
-  const memberExpression = pathParts.reduce((expr, current, idx, arr) => {
-    if (arr.length > idx + 1) {
-      if (!expr) {
-        expr = jscs.memberExpression(jscs.identifier(arr[idx]), jscs.identifier(arr[idx + 1]));
-      } else {
-        expr = jscs.memberExpression(expr, jscs.identifier(arr[idx + 1]));
-      }
-    }
-
-    return expr;
-  }, undefined);
-
+  const memberExpression = createMemberExpression(path);
   return jscs.callExpression(memberExpression, args);
 };
 
@@ -75,6 +63,26 @@ const createFindMemberExprObject = (memberPath) => {
     }
 
     return obj;
+  }, undefined);
+};
+
+/**
+ * Create a member expression from a dot-delimited path (`ol.array.find`), or array of strings.
+ * @param {string|Array<string>} path The call path.
+ * @return {Node} The member expression node.
+ */
+const createMemberExpression = (path) => {
+  const pathParts = Array.isArray(path) ? path : path.split('.');
+  return pathParts.reduce((expr, current, idx, arr) => {
+    if (arr.length > idx + 1) {
+      if (!expr) {
+        expr = jscs.memberExpression(jscs.identifier(arr[idx]), jscs.identifier(arr[idx + 1]));
+      } else {
+        expr = jscs.memberExpression(expr, jscs.identifier(arr[idx + 1]));
+      }
+    }
+
+    return expr;
   }, undefined);
 };
 
@@ -121,10 +129,11 @@ const replaceFunction = (root, options) => {
 };
 
 module.exports = {
-  bindArgs: bindArgs,
-  createCall: createCall,
-  createFindCallFn: createFindCallFn,
-  createFindMemberExprObject: createFindMemberExprObject,
-  memberExpressionToString: memberExpressionToString,
-  replaceFunction: replaceFunction
+  bindArgs,
+  createCall,
+  createFindCallFn,
+  createFindMemberExprObject,
+  createMemberExpression,
+  memberExpressionToString,
+  replaceFunction
 }

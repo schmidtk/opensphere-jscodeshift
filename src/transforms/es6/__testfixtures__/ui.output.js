@@ -1,6 +1,5 @@
-goog.module('os.ns.MyComponentCtrl');
+goog.module('os.ns.MyComponent');
 goog.module.declareLegacyNamespace();
-goog.module('os.ns.myComponentDirective');
 
 goog.require('os.ns.ParentCtrl');
 goog.require('os.ui.Module');
@@ -10,12 +9,12 @@ goog.require('os.ui.Module');
  * Test directive.
  * @return {angular.Directive}
  */
-os.ns.myComponentDirective = function() {
+const directive = () => {
   return {
     restrict: 'AE',
     replace: true,
     templateUrl: os.ROOT + 'views/mycomponent.html',
-    controller: MyComponentCtrl,
+    controller: Controller,
     controllerAs: 'ctrl'
   };
 };
@@ -24,13 +23,14 @@ os.ns.myComponentDirective = function() {
 /**
  * Add the directive to the module
  */
-os.ui.Module.directive('my-component', [os.ns.myComponentDirective]);
+os.ui.Module.directive('my-component', [directive]);
 
 
 /**
  * Test controller.
+ * @unrestricted
  */
-class MyComponentCtrl extends os.ns.ParentCtrl {
+class Controller extends os.ns.ParentCtrl {
   /**
    * Constructor.
    * @param {!angular.Scope} $scope The Angular scope.
@@ -86,7 +86,7 @@ class MyComponentCtrl extends os.ns.ParentCtrl {
      */
     this['exposedProp2'] = 'bar';
 
-    $scope.$on('someEvent', MyComponentCtrl.staticFn_);
+    $scope.$on('someEvent', Controller.staticFn_);
     $scope.$on('$destroy', this.destroy_.bind(this));
   }
 
@@ -106,8 +106,8 @@ class MyComponentCtrl extends os.ns.ParentCtrl {
    * @return {boolean}
    */
   memberFn(arg1, opt_arg2) {
-    if (arg1 === MyComponentCtrl.CONSTANT) {
-      goog.log.fine(MyComponentCtrl.LOGGER_, 'Some message');
+    if (arg1 === Controller.CONSTANT) {
+      goog.log.fine(Controller.LOGGER_, 'Some message');
       return true;
     }
 
@@ -150,7 +150,10 @@ class MyComponentCtrl extends os.ns.ParentCtrl {
 /**
  * @inheritDoc
  */
-MyComponentCtrl.prototype.overrideToExpression = goog.nullFunction;
+Controller.prototype.overrideToExpression = goog.nullFunction;
 
 
-exports = MyComponentCtrl;
+exports = {
+  Controller,
+  directive
+};

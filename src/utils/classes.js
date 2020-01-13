@@ -1,6 +1,7 @@
 const jscs = require('jscodeshift');
 const {getClassNode, registerClassNode} = require('./classregistry');
-const {addLegacyNamespace, isPrivate} = require('./goog');
+const {addExports} = require('./es6');
+const {addLegacyNamespace, isControllerClass, isPrivate} = require('./goog');
 const {createCall, createFindCallFn, createFindMemberExprObject, memberExpressionToString} = require('./jscs');
 const {logger} = require('./logger');
 
@@ -27,6 +28,18 @@ const EXTENDS = /@extends/;
  * @type {RegExp}
  */
 const EXTENDS_GENERIC = /@extends {.+<.+>}/;
+
+/**
+ * Property name to assign UI controller class.
+ * @type {string}
+ */
+const CONTROLLER_NAME = 'Controller';
+
+/**
+ * Property name to assign directive functions.
+ * @type {string}
+ */
+const DIRECTIVE_NAME = 'directive';
 
 /**
  * Adds a method to a class.
@@ -128,8 +141,8 @@ const splitCommentsForClass = (comment) => {
   }
 
   return {
-    classComment: createCommentBlockFromParts(classCommentParts),
-    ctorComment: createCommentBlockFromParts(ctorCommentParts)
+    body: createCommentBlockFromParts(classCommentParts),
+    ctor: createCommentBlockFromParts(ctorCommentParts)
   };
 };
 
@@ -140,6 +153,24 @@ const insertBeforeClass = (root, className, node) => {
   root.find(jscs.ClassDeclaration, {id: {name: className}}).forEach(path => {
     jscs(path).insertBefore(node);
   });
+};
+
+/**
+ * Convert an Angular directive function.
+ */
+const convertDirective = (root, path, moduleName) => {
+  const directiveFn = jscs.arrowFunctionExpression([], path.value.right.body, false);
+  const varDeclarator = jscs.variableDeclarator(jscs.identifier(DIRECTIVE_NAME), directiveFn);
+  const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
+  varDeclaration.comments = [jscs.commentBlock(path.parent.value.comments.pop().value)];
+
+  jscs(path.parent).replaceWith(varDeclaration);
+
+  // replace references to the fully qualified class name with the local class reference
+  root.find(jscs.MemberExpression, createFindMemberExprObject(moduleName))
+      .forEach(path => jscs(path).replaceWith(jscs.identifier(DIRECTIVE_NAME)));
+
+  addExports(root, path.parent.parent.value, [DIRECTIVE_NAME]);
 };
 
 /**
@@ -264,26 +295,6 @@ const moveSingletonToClass = (path, moduleName) => {
   }
 };
 
-const addExports = (program, keys) => {
-  let assignmentValue;
-
-  if (typeof keys === 'string') {
-    // single default export
-    assignmentValue = jscs.identifier(keys);
-  } else {
-    // non-default exports
-    const properties = keys.map(key => {
-      const property = jscs.property('init', jscs.identifier(key), jscs.identifier(key));
-      property.shorthand = true;
-      return property;
-    });
-    assignmentValue = jscs.objectExpression(properties);
-  }
-
-  const assignment = jscs.assignmentExpression('=', jscs.identifier('exports'), assignmentValue);
-  program.body.push(jscs.expressionStatement(assignment));
-};
-
 const replaceBaseWithSuper = (path, moduleName) => {
   const args = path.value.arguments;
   if (args[1].type === 'Literal') {
@@ -343,8 +354,28 @@ const replaceProvidesWithModules = (root) => {
   return modules;
 };
 
+/**
+ * Replace all goog.provide statements with goog.module
+ * @param {NodePath} root The root node.
+ * @param {string} controllerName The controller name.
+ * @param {string} directiveName The directive name.
+ */
+const replaceUIModules = (root, controllerName, directiveName) => {
+  const moduleName = controllerName.replace(/Ctrl$/, '');
+  const findFn = createFindCallFn('goog.module');
+  root.find(jscs.CallExpression, findFn).forEach((path, idx, paths) => {
+    const args = path.value.arguments;
+    if (args[0].value === directiveName) {
+      jscs(path).remove();
+    } else if (args[0].value === controllerName) {
+      args[0] = jscs.literal(moduleName);
+    }
+  });
+};
+
 const convertClass = (root, path, moduleName) => {
-  const className = path.value.left.property.name;
+  const isController = isControllerClass(path.parent.value);
+  const className = isController ? CONTROLLER_NAME : path.value.left.property.name;
 
   const ctorFn = jscs.functionExpression(null, path.value.right.params, path.value.right.body);
   const ctor = jscs.methodDefinition('constructor', jscs.identifier('constructor'), ctorFn);
@@ -353,9 +384,12 @@ const convertClass = (root, path, moduleName) => {
 
   const comments = path.parent.value.comments;
   if (comments && comments.length) {
-    const {classComment, ctorComment} = splitCommentsForClass(comments.pop().value);
-    classDef.comments = [jscs.commentBlock(classComment)];
-    ctor.comments = [jscs.commentBlock(ctorComment)];
+    const classComments = splitCommentsForClass(comments.pop().value);
+    if (isController) {
+      classComments.body = classComments.body.replace(/ *$/, ' * @unrestricted\n ');
+    }
+    classDef.comments = [jscs.commentBlock(classComments.body)];
+    ctor.comments = [jscs.commentBlock(classComments.ctor)];
   }
 
   jscs(path.parent).replaceWith(classDef);
@@ -403,13 +437,15 @@ const convertClass = (root, path, moduleName) => {
       .forEach(path => jscs(path).replaceWith(jscs.identifier(className)))
 
   // add exports statement for the class
-  addExports(path.parent.parent.value, className);
+  addExports(root, path.parent.parent.value, isController ? [className] : className);
 };
 
 module.exports = {
   addMethodToClass,
   addStaticGetToClass,
   convertClass,
+  convertDirective,
   replaceProvidesWithModules,
+  replaceUIModules,
   splitCommentsForClass
 };
