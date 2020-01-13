@@ -3,10 +3,15 @@ const {createFindMemberExprObject} = require('../../utils/jscs');
 const {convertClass, replaceProvidesWithModules} = require('../../utils/classes');
 const {isClosureClass, isControllerClass, isDirective} = require('../../utils/goog');
 const {getDefaultSourceOptions} = require('../../utils/sourceoptions');
+const {logger} = require('../../utils/logger');
 
 module.exports = (file, api, options) => {
   const root = jscs(file.source);
   const modules = replaceProvidesWithModules(root);
+
+  if (modules.length > 1) {
+    logger.warn(`${file.path}: detected ${modules.length} modules in file.`);
+  }
 
   modules.forEach(moduleName => {
     root.find(jscs.AssignmentExpression, {
