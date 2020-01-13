@@ -13,6 +13,8 @@ const PRIVATE_CONSTANT_ = 'World';
 
 /**
  * Class description.
+ *
+ * Additional description.
  */
 class MyClass extends os.ns.ParentClass {
   /**

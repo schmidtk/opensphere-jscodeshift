@@ -5,9 +5,13 @@ goog.require('os.ns.ParentClass');
 
 /**
  * Class description.
+ *
+ * Additional description.
+ *
  * @param {string} arg1 First arg.
  * @param {number} arg2 Second arg.
  * @param {boolean=} opt_arg3 Optional arg.
+ *
  * @extends {os.ns.ParentClass}
  * @constructor
  */

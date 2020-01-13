@@ -69,25 +69,42 @@ const addStaticGetToClass = (path, moduleName) => {
 };
 
 /**
+ * Clean up comment block parts before generating the block.
+ * @param {Array<string>} commentParts The comment parts.
+ */
+const createCommentBlockFromParts = (commentParts) => {
+  // remove leading/trailing blank comment lines
+  while (commentParts.length && (!commentParts[0] || commentParts[0].trim() === '*')) {
+    commentParts.shift();
+  }
+
+  while (commentParts.length && (!commentParts[commentParts.length - 1] || commentParts[commentParts.length - 1].trim() === '*')) {
+    commentParts.pop();
+  }
+
+  // default comment block is /*, this makes it /**
+  commentParts.unshift('*');
+
+  // indent */ by one space
+  commentParts.push(' ');
+
+  return commentParts.join('\n');
+};
+
+/**
  * Split a comment into parts for the class and constructor.
  * @param {string} comment The original class comment.
  * @return {{classComment: string, ctorComment: string}}
  */
 const splitCommentsForClass = (comment) => {
-  const origParts = comment.split('\n');
-  const classCommentParts = ['*'];
-  const ctorCommentParts = ['*', ' * Constructor.'];
+  const origParts = comment.trim().split('\n');
+  const classCommentParts = [];
+  const ctorCommentParts = [' * Constructor.'];
 
   let inParam = false;
   for (let i = 0; i < origParts.length; i++) {
     const part = origParts[i];
     const trimmed = part.trim();
-
-    if (trimmed === '*') {
-      // skip blank lines, and also assume a @param definition is finished
-      inParam = false;
-      continue;
-    }
 
     if (inParam && !trimmed.startsWith('*   ')) {
       // assume multi-line params are indented at least two extra spaces
@@ -105,16 +122,14 @@ const splitCommentsForClass = (comment) => {
       inParam = true;
     } else if (CTOR_COMMENT_REGEXP.test(trimmed)) {
       ctorCommentParts.push(part);
-    }else {
+    } else {
       classCommentParts.push(part);
     }
   }
 
-  ctorCommentParts.push(' ');
-
   return {
-    classComment: classCommentParts.join('\n'),
-    ctorComment: ctorCommentParts.join('\n')
+    classComment: createCommentBlockFromParts(classCommentParts),
+    ctorComment: createCommentBlockFromParts(ctorCommentParts)
   };
 };
 
