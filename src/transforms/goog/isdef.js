@@ -3,7 +3,7 @@
  */
 
 const callToBinary = require('../../utils/calltobinary');
-const {getDefaultSourceOptions} = require('../../utils/sourceoptions');
+const {getDefaultSourceOptions} = require('../../utils/options');
 
 module.exports = (file, api, options) => {
   const root = callToBinary(file, {

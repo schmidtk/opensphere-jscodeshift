@@ -1,7 +1,8 @@
 'use strict';
 
 const defineTest = require('jscodeshift/dist/testUtils').defineTest;
+const options = require('../../../utils/options').getDefaultTestOptions();
 
-defineTest(__dirname, 'providetomodule', {dry: true}, 'closureclass');
-defineTest(__dirname, 'providetomodule', {dry: true}, 'interface');
-defineTest(__dirname, 'providetomodule', {dry: true}, 'ui');
+defineTest(__dirname, 'providetomodule', options, 'closureclass');
+defineTest(__dirname, 'providetomodule', options, 'interface');
+defineTest(__dirname, 'providetomodule', options, 'ui');

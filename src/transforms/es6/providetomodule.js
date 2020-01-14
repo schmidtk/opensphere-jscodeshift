@@ -3,7 +3,7 @@ const {createFindMemberExprObject} = require('../../utils/jscs');
 const {convertClass, convertDirective, convertInterface, replaceProvidesWithModules, replaceUIModules} = require('../../utils/classes');
 const {isClosureClass, isControllerClass, isDirective, isInterface} = require('../../utils/goog');
 const {createUIShim} = require('../../utils/shim');
-const {getDefaultSourceOptions} = require('../../utils/sourceoptions');
+const {getDefaultSourceOptions} = require('../../utils/options');
 const {logger} = require('../../utils/logger');
 
 module.exports = (file, api, options) => {

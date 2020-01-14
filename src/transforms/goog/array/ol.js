@@ -4,7 +4,7 @@
 
 const jscs = require('jscodeshift');
 const jscsUtil = require('../../../utils/jscs');
-const {getDefaultSourceOptions} = require('../../../utils/sourceoptions');
+const {getDefaultSourceOptions} = require('../../../utils/options');
 
 /**
  * Replace `goog.array` calls with equivalent `ol.array` calls.

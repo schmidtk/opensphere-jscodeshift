@@ -1,7 +1,7 @@
 const fs = require('fs');
 const jscs = require('jscodeshift');
 const {createCall, createMemberExpression} = require('./jscs');
-const {getDefaultSourceOptions} = require('./sourceoptions');
+const {getDefaultSourceOptions} = require('./options');
 const {logger} = require('./logger');
 
 /**

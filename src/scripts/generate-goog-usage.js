@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const jscs = require('jscodeshift');
-const {getDefaultSourceOptions} = require('../utils/sourceoptions');
+const {getDefaultSourceOptions} = require('../utils/options');
 
 /**
  * Find all `goog.*` expressions in a file.

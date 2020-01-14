@@ -4,7 +4,7 @@
 
 const jscs = require('jscodeshift');
 const get = require('get-value');
-const {getDefaultSourceOptions} = require('../../utils/sourceoptions');
+const {getDefaultSourceOptions} = require('../../utils/options');
 
 /**
  * If a node is a `goog.bind` call.
