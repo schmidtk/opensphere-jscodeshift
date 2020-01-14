@@ -1,3 +1,6 @@
+/**
+ * @fileoverview Some comments at the top of the file that shouldn't be dropped.
+ */
 goog.provide('os.ns');
 
 

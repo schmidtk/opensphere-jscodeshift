@@ -305,13 +305,18 @@ const replaceProvidesWithModules = (root) => {
     const args = path.value.arguments;
     modules.push(args[0].value);
 
+    const oldComments = path.parent.value.comments;
     jscs(path).remove();
 
     if (!idx) {
       programBody.unshift(jscs.expressionStatement(createCall('goog.module.declareLegacyNamespace', [])));
     }
 
-    programBody.unshift(jscs.expressionStatement(createCall('goog.module', args)));
+    const googModuleExpr = jscs.expressionStatement(createCall('goog.module', args));
+    if (oldComments) {
+      googModuleExpr.comments = oldComments.map(c => jscs.commentBlock(c.value));
+    }
+    programBody.unshift(googModuleExpr);
   });
 
   return modules;
