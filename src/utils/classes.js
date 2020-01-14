@@ -1,7 +1,7 @@
 const jscs = require('jscodeshift');
 const {getClassNode, registerClassNode} = require('./classregistry');
 const {addExports} = require('./es6');
-const {addLegacyNamespace, isControllerClass} = require('./goog');
+const {isControllerClass} = require('./goog');
 const {createCall, createFindCallFn, createFindMemberExprObject, memberExpressionToString} = require('./jscs');
 const {logger} = require('./logger');
 
@@ -153,24 +153,6 @@ const splitCommentsForClass = (comment) => {
 };
 
 /**
- * Convert an Angular directive function.
- */
-const convertDirective = (root, path, moduleName) => {
-  const directiveFn = jscs.arrowFunctionExpression([], path.value.right.body, false);
-  const varDeclarator = jscs.variableDeclarator(jscs.identifier(DIRECTIVE_NAME), directiveFn);
-  const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
-  varDeclaration.comments = [jscs.commentBlock(path.parent.value.comments.pop().value)];
-
-  jscs(path.parent).replaceWith(varDeclaration);
-
-  // replace references to the fully qualified class name with the local class reference
-  root.find(jscs.MemberExpression, createFindMemberExprObject(moduleName))
-      .forEach(path => jscs(path).replaceWith(jscs.identifier(DIRECTIVE_NAME)));
-
-  addExports(root, path.parent.parent.value, [DIRECTIVE_NAME]);
-};
-
-/**
  * Convert a static property on the class.
  */
 const convertStaticProperty = (root, path, moduleName) => {
@@ -311,14 +293,17 @@ const replaceProvidesWithModules = (root) => {
   const modules = [];
   const findFn = createFindCallFn('goog.provide');
   root.find(jscs.CallExpression, findFn).forEach((path, idx, paths) => {
+    const programBody = root.find(jscs.Program).get().value.body;
     const args = path.value.arguments;
     modules.push(args[0].value);
 
-    jscs(path).replaceWith(createCall('goog.module', args));
+    jscs(path).remove();
 
     if (!idx) {
-      addLegacyNamespace(path.parent);
+      programBody.unshift(jscs.expressionStatement(createCall('goog.module.declareLegacyNamespace', [])));
     }
+
+    programBody.unshift(jscs.expressionStatement(createCall('goog.module', args)));
   });
 
   return modules;
@@ -341,6 +326,27 @@ const replaceUIModules = (root, controllerName, directiveName) => {
       args[0] = jscs.literal(moduleName);
     }
   });
+};
+
+/**
+ * Convert an Angular directive function.
+ * @param {NodePath} root The root node path.
+ * @param {NodePath} path The Closure class node path.
+ * @param {string} moduleName The Closure module name.
+ */
+const convertDirective = (root, path, moduleName) => {
+  const directiveFn = jscs.arrowFunctionExpression([], path.value.right.body, false);
+  const varDeclarator = jscs.variableDeclarator(jscs.identifier(DIRECTIVE_NAME), directiveFn);
+  const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
+  varDeclaration.comments = [jscs.commentBlock(path.parent.value.comments.pop().value)];
+
+  jscs(path.parent).replaceWith(varDeclaration);
+
+  // replace references to the fully qualified class name with the local class reference
+  root.find(jscs.MemberExpression, createFindMemberExprObject(moduleName))
+      .forEach(path => jscs(path).replaceWith(jscs.identifier(DIRECTIVE_NAME)));
+
+  addExports(root, DIRECTIVE_NAME);
 };
 
 /**
@@ -371,7 +377,7 @@ const convertInterface = (root, path, moduleName) => {
   root.find(jscs.MemberExpression, createFindMemberExprObject(moduleName))
       .forEach(path => jscs(path).replaceWith(jscs.identifier(interfaceName)));
 
-  addExports(root, path.parent.parent.value, interfaceName);
+  addExports(root, interfaceName);
 };
 
 /**
@@ -444,7 +450,7 @@ const convertClass = (root, path, moduleName) => {
       .forEach(path => jscs(path).replaceWith(jscs.identifier(className)));
 
   // add exports statement for the class
-  addExports(root, path.parent.parent.value, isController ? [className] : className);
+  addExports(root, className);
 };
 
 module.exports = {

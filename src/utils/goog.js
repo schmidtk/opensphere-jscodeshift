@@ -89,17 +89,6 @@ const isPrivate = (node) => {
 };
 
 /**
- * Add a goog.declareLegacyNamespace statement after a node.
- * @param {Node} node The node.
- */
-const addLegacyNamespace = node => {
-  const googModule = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier('module'));
-  const callee = jscs.memberExpression(googModule, jscs.identifier('declareLegacyNamespace'));
-  const call = jscs.callExpression(callee, []);
-  node.insertAfter(jscs.expressionStatement(call));
-};
-
-/**
  * Add a goog.require statement if it doesn't already exist.
  * @param {Node} root The root node.
  * @param {string} toAdd The require to add.
@@ -143,7 +132,6 @@ const sortRequires = root => {
 };
 
 module.exports = {
-  addLegacyNamespace,
   addRequire,
   isGoogProvide,
   isGoogRequire,

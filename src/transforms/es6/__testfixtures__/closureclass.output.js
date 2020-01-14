@@ -1,5 +1,4 @@
 goog.module('os.ns.MyClass');
-
 goog.module.declareLegacyNamespace();
 
 goog.require('os.ns.ParentClass');

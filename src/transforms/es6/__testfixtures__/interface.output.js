@@ -1,5 +1,4 @@
 goog.module('os.ns.IMyInterface');
-
 goog.module.declareLegacyNamespace();
 
 goog.require('os.ns.IParentInterface1');
