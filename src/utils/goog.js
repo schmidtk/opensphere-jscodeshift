@@ -1,6 +1,72 @@
 const jscs = require('jscodeshift');
 
 /**
+ * Regular expression to detect @const JSDoc annotation.
+ * @type {RegExp}
+ */
+const CONST_REGEXP = /@const([\s]+.*)?/;
+
+const getObjectProperty = (key, value) => {
+  const property = jscs.property('init', jscs.identifier(key), value || jscs.identifier(key));
+  property.shorthand = true;
+  return property;
+};
+
+const getObjectProperties = (keys, values) => {
+  return typeof keys === 'string' ? [getObjectProperty(keys, values)] :
+      keys.map((key, idx, arr) => getObjectProperty(key, values ? values[idx] : undefined));
+};
+
+/**
+ * Add exports to the source.
+ * @param {NodePath} root The root node path.
+ * @param {Array<string>|string} keys The export key(s). Use a string for default export, or array of strings for
+ *                                    non-default exports.
+ * @param {Array<Node>|Node} values Values to assign to the export(s).
+ */
+const addExports = (root, keys, values) => {
+  const programs = root.find(jscs.Program);
+  if (programs.length) {
+    const program = programs.get().value;
+
+    const existingAssignmentExpr = root.find(jscs.AssignmentExpression, {
+      left: {type: 'Identifier', name: 'exports'}
+    });
+
+    let existingExports;
+    if (existingAssignmentExpr.length) {
+      existingExports = existingAssignmentExpr.get();
+
+      // if the file is currently using a default export, convert it
+      if (existingExports.value.right.type === 'Identifier') {
+        const currentName = existingExports.value.right.name;
+        existingExports.value.right = jscs.objectExpression([getObjectProperty(currentName)]);
+      }
+    }
+
+    if (!existingExports && typeof keys === 'string' && !values) {
+      // single default export
+      const assignment = jscs.assignmentExpression('=', jscs.identifier('exports'), jscs.identifier(keys));
+      program.body.push(jscs.expressionStatement(assignment));
+    } else {
+      // non-default exports
+      const properties = getObjectProperties(keys, values);
+
+      if (existingExports) {
+        // add keys to existing exports
+        const existingObjExpr = existingExports.value.right;
+        existingObjExpr.properties = existingObjExpr.properties.concat(properties);
+      } else {
+        // create a new exports assignment
+        const assignmentValue = jscs.objectExpression(properties);
+        const assignment = jscs.assignmentExpression('=', jscs.identifier('exports'), assignmentValue);
+        program.body.push(jscs.expressionStatement(assignment));
+      }
+    }
+  }
+};
+
+/**
  * If a node is a `goog.array.find` call.
  * @param {Node} node The node.
  * @return {boolean}
@@ -77,6 +143,18 @@ const isInterface = node => {
 };
 
 /**
+ * If a node is marked constant in its comments.
+ * @param {Node} node The node.
+ * @return {boolean}
+ */
+const isConst = (node) => {
+  if (node && node.comments && node.comments.length === 1) {
+    return CONST_REGEXP.test(node.comments[0].value);
+  }
+  return false;
+};
+
+/**
  * If a node is marked private in its comments.
  * @param {Node} node The node.
  * @return {boolean}
@@ -132,6 +210,7 @@ const sortRequires = root => {
 };
 
 module.exports = {
+  addExports,
   addRequire,
   isGoogProvide,
   isGoogRequire,
@@ -139,6 +218,7 @@ module.exports = {
   isControllerClass,
   isDirective,
   isInterface,
+  isConst,
   isPrivate,
   sortRequires
 };

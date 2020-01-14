@@ -1,6 +1,6 @@
 const jscs = require('jscodeshift');
 const {createFindMemberExprObject} = require('../../utils/jscs');
-const {convertClass, convertDirective, convertInterface, replaceProvidesWithModules, replaceUIModules} = require('../../utils/classes');
+const {convertNamespaceExpression, convertClass, convertDirective, convertInterface, replaceProvidesWithModules, replaceUIModules} = require('../../utils/classes');
 const {isClosureClass, isControllerClass, isDirective, isInterface} = require('../../utils/goog');
 const {createUIShim} = require('../../utils/shim');
 const {getDefaultSourceOptions} = require('../../utils/options');
@@ -38,6 +38,33 @@ module.exports = (file, api, options) => {
         }
 
         convertClass(root, path, moduleName);
+      } else {
+        path.value.left = jscs.identifier('exports');
+      }
+    });
+
+    root.find(jscs.ExpressionStatement, {
+      expression: {
+        type: 'AssignmentExpression',
+        left: {
+          type: 'MemberExpression',
+          object: createFindMemberExprObject(moduleName)
+        }
+      }
+    }).forEach(path => {
+      if (path.parent.value.type === 'Program') {
+        convertNamespaceExpression(root, path, moduleName);
+      }
+    });
+
+    root.find(jscs.ExpressionStatement, {
+      expression: {
+        type: 'MemberExpression',
+        object: createFindMemberExprObject(moduleName)
+      }
+    }).forEach(path => {
+      if (path.parent.value.type === 'Program') {
+        convertNamespaceExpression(root, path, moduleName);
       }
     });
   });

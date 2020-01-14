@@ -1,8 +1,7 @@
 const jscs = require('jscodeshift');
 const {getClassNode, registerClassNode} = require('./classregistry');
-const {addExports} = require('./es6');
-const {isControllerClass} = require('./goog');
-const {createCall, createFindCallFn, createFindMemberExprObject, memberExpressionToString} = require('./jscs');
+const {addExports, isPrivate, isControllerClass} = require('./goog');
+const {createCall, createFindCallFn, createFindMemberExprObject, createMemberExpression, memberExpressionToString} = require('./jscs');
 const {logger} = require('./logger');
 
 /**
@@ -380,6 +379,50 @@ const convertInterface = (root, path, moduleName) => {
   addExports(root, interfaceName);
 };
 
+const isReassigned = (root, moduleName, propName) => {
+  return root.find(jscs.AssignmentExpression, {
+    left: {
+      type: 'MemberExpression',
+      object: createFindMemberExprObject(moduleName),
+      property: {name: propName}
+    }
+  }).length > 1;
+}
+
+const convertNamespaceExpression = (root, path, moduleName) => {
+  const expression = path.value.expression;
+  const isAssignment = expression.type === 'AssignmentExpression';
+  const propName = isAssignment ? expression.left.property.name :
+      path.value.expression.property.name;
+
+  if (isPrivate(path.value)) {
+    const kind = isAssignment && !isReassigned(root, moduleName, propName) ? 'const' : 'let';
+    const varDeclarator = jscs.variableDeclarator(jscs.identifier(propName), expression.right || null);
+    const varDeclaration = jscs.variableDeclaration(kind, [varDeclarator]);
+    const newComment = path.value.comments.pop().value.replace('\n * @private', '');
+    varDeclaration.comments = [jscs.commentBlock(newComment)];
+
+    jscs(path).replaceWith(varDeclaration);
+
+    // replace references to the fully qualified class name with the local class reference
+    root.find(jscs.MemberExpression, createFindMemberExprObject(`${moduleName}.${propName}`))
+        .forEach(path => jscs(path).replaceWith(jscs.identifier(propName)));
+  } else {
+    // replace the left side of the assignment with an export
+    const memberExpr = createMemberExpression(`exports.${propName}`);
+
+    if (isAssignment) {
+      expression.left = memberExpr;
+    } else {
+      expression.object = jscs.identifier('exports');
+    }
+
+    // replace references to the fully qualified class name with the local class reference
+    root.find(jscs.MemberExpression, createFindMemberExprObject(`${moduleName}.${propName}`))
+        .forEach(path => jscs(path).replaceWith(memberExpr));
+  }
+};
+
 /**
  * Convert a Closure class to an ES6 class.
  * @param {NodePath} root The root node path.
@@ -456,6 +499,7 @@ const convertClass = (root, path, moduleName) => {
 module.exports = {
   addMethodToClass,
   addStaticGetToClass,
+  convertNamespaceExpression,
   convertClass,
   convertDirective,
   convertInterface,
