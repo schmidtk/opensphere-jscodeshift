@@ -65,6 +65,18 @@ const isDirective = node => {
 };
 
 /**
+ * If a node represents an interface.
+ * @param {Node} node The node.
+ * @return {boolean}
+ */
+const isInterface = node => {
+  if (node && node.comments && node.comments.length === 1) {
+    return node.comments[0].value.indexOf('@interface') > -1;
+  }
+  return false;
+};
+
+/**
  * If a node is marked private in its comments.
  * @param {Node} node The node.
  * @return {boolean}
@@ -138,6 +150,7 @@ module.exports = {
   isClosureClass,
   isControllerClass,
   isDirective,
+  isInterface,
   isPrivate,
   sortRequires
 };

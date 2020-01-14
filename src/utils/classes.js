@@ -18,6 +18,12 @@ const CTOR_COMMENT_REGEXP = /@ngInject/;
 const COMMENT_IGNORE_REGEXP = /@constructor/;
 
 /**
+ * Match parameter name in @param comment.
+ * @type {RegExp}
+ */
+const PARAM_NAME_REGEXP = /@param {[^}]+} ([^\s]+)/;
+
+/**
  * Match @extends JSDoc.
  * @type {RegExp}
  */
@@ -176,7 +182,7 @@ const convertStaticProperty = (root, path, moduleName) => {
   }
 };
 
-const convertPrototypeExpression = (path, moduleName) => {
+const convertPrototypeAssignment = (path, moduleName) => {
   const propertyName = path.value.left.property.name;
   const valueType = path.value.right.type;
   if (valueType === 'FunctionExpression') {
@@ -191,6 +197,22 @@ const convertPrototypeExpression = (path, moduleName) => {
   } else {
     logger.warn(`In ${moduleName}: Unable to convert prototype expression ${propertyName} of type ${valueType}.`);
   }
+};
+
+const convertPrototypeExpression = (path, moduleName) => {
+  const propertyName = path.value.expression.property.name;
+  const commentParts = path.value.comments.pop().value.split('\n');
+
+  const args = commentParts.map(comment => {
+    const match = comment.trim().match(PARAM_NAME_REGEXP);
+    return match && match.length >= 2 ? match[1] : null;
+  }).filter(item => !!item).map(param => jscs.identifier(param));
+
+  const fn = jscs.functionExpression(null, args, jscs.blockStatement([]));
+  const classMethod = addMethodToClass(moduleName, propertyName, fn, false);
+  classMethod.comments = [jscs.commentBlock(commentParts.join('\n'))];
+
+  jscs(path).remove();
 };
 
 /**
@@ -321,6 +343,43 @@ const replaceUIModules = (root, controllerName, directiveName) => {
   });
 };
 
+/**
+ * Convert a Closure interface to an ES6 class.
+ * @param {NodePath} root The root node path.
+ * @param {NodePath} path The Closure class node path.
+ * @param {string} moduleName The Closure module name.
+ */
+const convertInterface = (root, path, moduleName) => {
+  const interfaceName = path.value.left.property.name;
+
+  // convert the interface to a class
+  const classBody = jscs.classBody([]);
+  const classDef = jscs.classDeclaration(jscs.identifier(interfaceName), classBody);
+  classDef.comments = [jscs.commentBlock(path.parent.value.comments.pop().value)];
+  jscs(path.parent).replaceWith(classDef);
+
+  registerClassNode(moduleName, classDef);
+
+  // move all prototype functions/properties to the class
+  root.find(jscs.ExpressionStatement, {
+    expression: {
+      object: createFindMemberExprObject(`${moduleName}.prototype`)
+    }
+  }).forEach(path => convertPrototypeExpression(path, moduleName));
+
+  // replace references to the fully qualified class name with the local class reference
+  root.find(jscs.MemberExpression, createFindMemberExprObject(moduleName))
+      .forEach(path => jscs(path).replaceWith(jscs.identifier(interfaceName)));
+
+  addExports(root, path.parent.parent.value, interfaceName);
+};
+
+/**
+ * Convert a Closure class to an ES6 class.
+ * @param {NodePath} root The root node path.
+ * @param {NodePath} path The Closure class node path.
+ * @param {string} moduleName The Closure module name.
+ */
 const convertClass = (root, path, moduleName) => {
   const isController = isControllerClass(path.parent.value);
   const className = isController ? CONTROLLER_NAME : path.value.left.property.name;
@@ -350,7 +409,7 @@ const convertClass = (root, path, moduleName) => {
       type: 'MemberExpression',
       object: createFindMemberExprObject(`${moduleName}.prototype`)
     }
-  }).forEach(path => convertPrototypeExpression(path, moduleName));
+  }).forEach(path => convertPrototypeAssignment(path, moduleName));
 
   // replace all <class>.base calls with super
   root.find(jscs.CallExpression, createFindCallFn(`${moduleName}.base`))
@@ -382,7 +441,7 @@ const convertClass = (root, path, moduleName) => {
 
   // replace references to the fully qualified class name with the local class reference
   root.find(jscs.MemberExpression, createFindMemberExprObject(moduleName))
-      .forEach(path => jscs(path).replaceWith(jscs.identifier(className)))
+      .forEach(path => jscs(path).replaceWith(jscs.identifier(className)));
 
   // add exports statement for the class
   addExports(root, path.parent.parent.value, isController ? [className] : className);
@@ -393,6 +452,7 @@ module.exports = {
   addStaticGetToClass,
   convertClass,
   convertDirective,
+  convertInterface,
   replaceProvidesWithModules,
   replaceUIModules,
   splitCommentsForClass

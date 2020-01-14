@@ -1,7 +1,7 @@
 const jscs = require('jscodeshift');
 const {createFindMemberExprObject} = require('../../utils/jscs');
-const {convertClass, convertDirective, replaceProvidesWithModules, replaceUIModules} = require('../../utils/classes');
-const {isClosureClass, isControllerClass, isDirective} = require('../../utils/goog');
+const {convertClass, convertDirective, convertInterface, replaceProvidesWithModules, replaceUIModules} = require('../../utils/classes');
+const {isClosureClass, isControllerClass, isDirective, isInterface} = require('../../utils/goog');
 const {createUIShim} = require('../../utils/shim');
 const {getDefaultSourceOptions} = require('../../utils/sourceoptions');
 const {logger} = require('../../utils/logger');
@@ -17,7 +17,9 @@ module.exports = (file, api, options) => {
     root.find(jscs.AssignmentExpression, {
       left: createFindMemberExprObject(moduleName)
     }).forEach(path => {
-      if (isDirective(path.parent.value)) {
+      if (isInterface(path.parent.value)) {
+        convertInterface(root, path, moduleName);
+      } else if (isDirective(path.parent.value)) {
         directiveName = moduleName;
         convertDirective(root, path, moduleName);
       } else if (isClosureClass(path.parent.value)) {
