@@ -53,12 +53,12 @@ os.registerClass(os.ns.MyClass.NAME, os.ns.MyClass);
 
 
 /**
- * A private constant on the class that references the class.
+ * A private constant on the class.
  * @type {goog.log.Logger}
  * @private
  * @const
  */
-os.ns.MyClass.LOGGER_ = goog.log.getLogger(os.ns.MyClass.CONSTANT);
+os.ns.MyClass.LOGGER_ = goog.log.getLogger(os.ns.MyClass.NAME);
 
 /**
  * A constant on the class.

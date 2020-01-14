@@ -6,6 +6,24 @@ goog.require('os.ns.ParentClass');
 
 
 /**
+ * Class name registered with OpenSphere.
+ * @type {string}
+ */
+const NAME = 'os.ns.MyClass';
+
+/**
+ * A private constant on the class.
+ * @type {goog.log.Logger}
+ */
+const LOGGER_ = goog.log.getLogger(NAME);
+
+/**
+ * A constant on the class.
+ * @type {string}
+ */
+const CONSTANT = 'Hello';
+
+/**
  * A private constant on the class.
  * @type {string}
  */
@@ -54,7 +72,7 @@ class MyClass extends os.ns.ParentClass {
    * @return {boolean}
    */
   memberFn(arg1, opt_arg2) {
-    if (arg1 === MyClass.CONSTANT) {
+    if (arg1 === CONSTANT) {
       goog.log.fine(LOGGER_, 'Some message');
       return true;
     }
@@ -89,7 +107,7 @@ class MyClass extends os.ns.ParentClass {
    * @type {string}
    */
   static get NAME() {
-    return 'os.ns.MyClass';
+    return NAME;
   }
 
   /**
@@ -97,7 +115,7 @@ class MyClass extends os.ns.ParentClass {
    * @type {string}
    */
   static get CONSTANT() {
-    return 'Hello';
+    return CONSTANT;
   }
 }
 
@@ -105,18 +123,11 @@ os.implements(MyClass, os.ns.ISomeInterface.ID);
 os.implements(MyClass, os.ns.IAnotherInterface.ID);
 
 
-os.registerClass(MyClass.NAME, MyClass);
+os.registerClass(NAME, MyClass);
 
 
 /**
  * @inheritDoc
  */
 MyClass.prototype.overrideToExpression = goog.nullFunction;
-
-/**
- * A private constant on the class that references the class.
- * @type {goog.log.Logger}
- */
-const LOGGER_ = goog.log.getLogger(MyClass.CONSTANT);
-
 exports = MyClass;

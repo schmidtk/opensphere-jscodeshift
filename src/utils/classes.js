@@ -44,12 +44,12 @@ const DIRECTIVE_NAME = 'directive';
 /**
  * Adds a method to a class.
  */
-const addMethodToClass = (moduleName, methodName, methodValue, isStatic) => {
+const addMethodToClass = (moduleName, methodName, methodValue, isStatic, kind) => {
   let classMethod;
 
   const classDef = getClassNode(moduleName);
   if (classDef) {
-    classMethod = jscs.methodDefinition('method', jscs.identifier(methodName), methodValue, isStatic);
+    classMethod = jscs.methodDefinition(kind || 'method', jscs.identifier(methodName), methodValue, isStatic);
     classDef.body.body.push(classMethod);
   }
 
@@ -174,12 +174,13 @@ const convertDirective = (root, path, moduleName) => {
 };
 
 /**
- * Convert a private static property on the class to a local variable.
+ * Convert a static primitive property on the class to a local variable.
  */
-const convertPrivateClassPropertyToConst = (root, path, moduleName) => {
+const convertStaticPrimitive = (root, path, moduleName) => {
   const propertyName = path.value.left.property.name;
   const varDeclarator = jscs.variableDeclarator(jscs.identifier(propertyName), path.value.right);
   const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
+  const isPrivateProperty = isPrivate(path.parent.value);
 
   const newComment = path.parent.value.comments.pop().value.split('\n')
       .filter(comment => !(/^\* @(private|const)$/.test(comment.trim())))
@@ -210,10 +211,18 @@ const convertPrivateClassPropertyToConst = (root, path, moduleName) => {
   root.find(jscs.MemberExpression, createFindMemberExprObject(`${moduleName}.${propertyName}`)).forEach(path => {
     jscs(path).replaceWith(jscs.identifier(propertyName));
   });
+
+  // if the static property is not marked private, expose it as a static get function on the class
+  if (!isPrivateProperty) {
+    const staticGetConstBlock = jscs.blockStatement([jscs.returnStatement(jscs.identifier(propertyName))]);
+    const staticGetConstFn = jscs.functionExpression(null, [], staticGetConstBlock);
+    const classMethod = addMethodToClass(moduleName, propertyName, staticGetConstFn, true, 'get');
+    classMethod.comments = [jscs.commentBlock(newComment)];
+  }
 };
 
 /**
- * Adds a method to a class.
+ * Convert a static property on the class.
  */
 const convertStaticProperty = (root, path, moduleName) => {
   if (path.value.right.type === 'FunctionExpression') {
@@ -221,10 +230,8 @@ const convertStaticProperty = (root, path, moduleName) => {
     classMethod.comments = path.parent.value.comments;
 
     jscs(path).remove();
-  } else if (isPrivate(path.parent.value)) {
-    convertPrivateClassPropertyToConst(root, path, moduleName);
   } else {
-    addStaticGetToClass(path, moduleName);
+    convertStaticPrimitive(root, path, moduleName);
   }
 };
 
