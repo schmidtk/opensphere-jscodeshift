@@ -230,18 +230,27 @@ const moveSingletonToClass = (path, moduleName) => {
   const classDef = getClassNode(moduleName);
   if (classDef) {
     const className = classDef.id.name;
-    const newExpression = jscs.newExpression(jscs.identifier(className), []);
-    const varDeclarator = jscs.variableDeclarator(jscs.identifier('instance'), newExpression);
-    const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
-    const instanceComment = ['*', ` * Global ${className} instance.`, ` * @type {${className}}`, ' '].join('\n');
+    const instanceIdentifier = jscs.identifier('instance');
+    const varDeclarator = jscs.variableDeclarator(instanceIdentifier, null);
+    const varDeclaration = jscs.variableDeclaration('let', [varDeclarator]);
+    const instanceComment = ['*', ` * Global ${className} instance.`, ` * @type {${className}|undefined}`, ' '].join('\n');
     varDeclaration.comments = [jscs.commentBlock(instanceComment)];
 
     jscs(path.parent).replaceWith(varDeclaration);
 
-    const getInstanceBlock = jscs.blockStatement([jscs.returnStatement(jscs.identifier('instance'))]);
-    const getInstanceFn = jscs.functionExpression(null, [], getInstanceBlock);
+    const getInstanceFn = jscs.functionExpression(null, [], jscs.blockStatement([
+      jscs.ifStatement(
+        jscs.unaryExpression('!', instanceIdentifier, true),
+        jscs.blockStatement([
+          jscs.expressionStatement(
+            jscs.assignmentExpression('=', instanceIdentifier, jscs.newExpression(jscs.identifier(className), []))
+          )
+        ])
+      ),
+      jscs.returnStatement(instanceIdentifier)
+    ]));
     const classMethod = addMethodToClass(moduleName, 'getInstance', getInstanceFn, true);
-    const getInstanceComments = ['*', ' * Get the global instance.', ` * @return {${className}}`, ' '].join('\n');
+    const getInstanceComments = ['*', ' * Get the global instance.', ` * @return {!${className}}`, ' '].join('\n');
     classMethod.comments = [jscs.commentBlock(getInstanceComments)];
   }
 };

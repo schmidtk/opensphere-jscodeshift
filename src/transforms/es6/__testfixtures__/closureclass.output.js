@@ -76,10 +76,28 @@ class MyClass extends os.ns.ParentClass {
     // can't convert due to difference in class
     return os.ns.AnotherClass.superClass_.oldOverrideDifferentClass.call(this, arg1);
   }
+
+  /**
+   * Get the global instance.
+   * @return {!MyClass}
+   */
+  static getInstance() {
+    if (!instance) {
+      instance = new MyClass();
+    }
+
+    return instance;
+  }
 }
 
 os.implements(MyClass, os.ns.ISomeInterface.ID);
 os.implements(MyClass, os.ns.IAnotherInterface.ID);
+
+/**
+ * Global MyClass instance.
+ * @type {MyClass|undefined}
+ */
+let instance;
 
 
 /**

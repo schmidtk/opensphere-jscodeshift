@@ -41,6 +41,7 @@ os.ns.MyClass = function(arg1, arg2, opt_arg3) {
 goog.inherits(os.ns.MyClass, os.ns.ParentClass);
 os.implements(os.ns.MyClass, os.ns.ISomeInterface.ID);
 os.implements(os.ns.MyClass, os.ns.IAnotherInterface.ID);
+goog.addSingletonGetter(os.ns.MyClass);
 
 
 /**
