@@ -6,30 +6,6 @@ goog.require('os.ns.ParentClass');
 
 
 /**
- * Class name registered with OpenSphere.
- * @type {string}
- */
-const NAME = 'os.ns.MyClass';
-
-/**
- * A private constant on the class.
- * @type {goog.log.Logger}
- */
-const LOGGER_ = goog.log.getLogger(NAME);
-
-/**
- * A constant on the class.
- * @type {string}
- */
-const CONSTANT = 'Hello';
-
-/**
- * A private constant on the class.
- * @type {string}
- */
-const PRIVATE_CONSTANT_ = 'World';
-
-/**
  * Class description.
  *
  * Additional description.
@@ -72,8 +48,8 @@ class MyClass extends os.ns.ParentClass {
    * @return {boolean}
    */
   memberFn(arg1, opt_arg2) {
-    if (arg1 === CONSTANT) {
-      goog.log.fine(LOGGER_, 'Some message');
+    if (arg1 === MyClass.CONSTANT) {
+      goog.log.fine(MyClass.LOGGER_, 'Some message');
       return true;
     }
 
@@ -101,29 +77,44 @@ class MyClass extends os.ns.ParentClass {
     // can't convert due to difference in class
     return os.ns.AnotherClass.superClass_.oldOverrideDifferentClass.call(this, arg1);
   }
-
-  /**
-   * Class name registered with OpenSphere.
-   * @type {string}
-   */
-  static get NAME() {
-    return NAME;
-  }
-
-  /**
-   * A constant on the class.
-   * @type {string}
-   */
-  static get CONSTANT() {
-    return CONSTANT;
-  }
 }
 
 os.implements(MyClass, os.ns.ISomeInterface.ID);
 os.implements(MyClass, os.ns.IAnotherInterface.ID);
 
 
-os.registerClass(NAME, MyClass);
+/**
+ * Class name registered with OpenSphere.
+ * @type {string}
+ * @const
+ */
+MyClass.NAME = 'os.ns.MyClass';
+os.registerClass(MyClass.NAME, MyClass);
+
+
+/**
+ * A private constant on the class.
+ * @type {goog.log.Logger}
+ * @private
+ * @const
+ */
+MyClass.LOGGER_ = goog.log.getLogger(MyClass.NAME);
+
+/**
+ * A constant on the class.
+ * @type {string}
+ * @const
+ */
+MyClass.CONSTANT = 'Hello';
+
+
+/**
+ * A private constant on the class.
+ * @type {string}
+ * @private
+ * @const
+ */
+MyClass.PRIVATE_CONSTANT_ = 'World';
 
 
 /**

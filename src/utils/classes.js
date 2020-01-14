@@ -1,7 +1,7 @@
 const jscs = require('jscodeshift');
 const {getClassNode, registerClassNode} = require('./classregistry');
 const {addExports} = require('./es6');
-const {addLegacyNamespace, isControllerClass, isPrivate} = require('./goog');
+const {addLegacyNamespace, isControllerClass} = require('./goog');
 const {createCall, createFindCallFn, createFindMemberExprObject, memberExpressionToString} = require('./jscs');
 const {logger} = require('./logger');
 
@@ -147,15 +147,6 @@ const splitCommentsForClass = (comment) => {
 };
 
 /**
- * Insert the node prior to the named class declaration.
- */
-const insertBeforeClass = (root, className, node) => {
-  root.find(jscs.ClassDeclaration, {id: {name: className}}).forEach(path => {
-    jscs(path).insertBefore(node);
-  });
-};
-
-/**
  * Convert an Angular directive function.
  */
 const convertDirective = (root, path, moduleName) => {
@@ -174,54 +165,6 @@ const convertDirective = (root, path, moduleName) => {
 };
 
 /**
- * Convert a static primitive property on the class to a local variable.
- */
-const convertStaticPrimitive = (root, path, moduleName) => {
-  const propertyName = path.value.left.property.name;
-  const varDeclarator = jscs.variableDeclarator(jscs.identifier(propertyName), path.value.right);
-  const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
-  const isPrivateProperty = isPrivate(path.parent.value);
-
-  const newComment = path.parent.value.comments.pop().value.split('\n')
-      .filter(comment => !(/^\* @(private|const)$/.test(comment.trim())))
-      .join('\n');
-
-  varDeclaration.comments = [jscs.commentBlock(newComment)];
-
-  const classDef = getClassNode(moduleName);
-  if (classDef) {
-    if (jscs(varDeclarator).find(jscs.MemberExpression, createFindMemberExprObject(moduleName)).length) {
-      // references the class, move to the end of the file
-      const program = root.find(jscs.Program).get();
-      if (program) {
-        program.value.body.push(varDeclaration);
-        jscs(path.parent).remove();
-      }
-    } else {
-      // move prior to the class definition
-      insertBeforeClass(root, classDef.id.name, varDeclaration);
-      jscs(path.parent).remove();
-    }
-  } else {
-    // replace in the same position
-    jscs(path.parent).replaceWith(varDeclaration);
-  }
-
-  // replace local references to the expression
-  root.find(jscs.MemberExpression, createFindMemberExprObject(`${moduleName}.${propertyName}`)).forEach(path => {
-    jscs(path).replaceWith(jscs.identifier(propertyName));
-  });
-
-  // if the static property is not marked private, expose it as a static get function on the class
-  if (!isPrivateProperty) {
-    const staticGetConstBlock = jscs.blockStatement([jscs.returnStatement(jscs.identifier(propertyName))]);
-    const staticGetConstFn = jscs.functionExpression(null, [], staticGetConstBlock);
-    const classMethod = addMethodToClass(moduleName, propertyName, staticGetConstFn, true, 'get');
-    classMethod.comments = [jscs.commentBlock(newComment)];
-  }
-};
-
-/**
  * Convert a static property on the class.
  */
 const convertStaticProperty = (root, path, moduleName) => {
@@ -230,8 +173,6 @@ const convertStaticProperty = (root, path, moduleName) => {
     classMethod.comments = path.parent.value.comments;
 
     jscs(path).remove();
-  } else {
-    convertStaticPrimitive(root, path, moduleName);
   }
 };
 
