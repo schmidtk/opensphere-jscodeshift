@@ -9,6 +9,7 @@ const {logger} = require('../../utils/logger');
 module.exports = (file, api, options) => {
   const root = jscs(file.source);
   const modules = replaceProvidesWithModules(root);
+  let moduleCount = modules.length;
 
   let directiveName;
   let controllerName;
@@ -20,11 +21,20 @@ module.exports = (file, api, options) => {
       if (isInterface(path.parent.value)) {
         convertInterface(root, path, moduleName);
       } else if (isDirective(path.parent.value)) {
-        directiveName = moduleName;
+        if (!directiveName) {
+          directiveName = moduleName;
+        } else {
+          logger.warn(`${file.path}: detected multiple directives in file.`);
+        }
+
         convertDirective(root, path, moduleName);
       } else if (isClosureClass(path.parent.value)) {
         if (isControllerClass(path.parent.value)) {
-          controllerName = moduleName;
+          if (!controllerName) {
+            controllerName = moduleName;
+          } else {
+            logger.warn(`${file.path}: detected multiple controllers in file.`);
+          }
         }
 
         convertClass(root, path, moduleName);
@@ -33,15 +43,17 @@ module.exports = (file, api, options) => {
   });
 
   if (controllerName && directiveName) {
+    moduleCount--;
     replaceUIModules(root, controllerName, directiveName);
 
     if (!options.dry) {
       createUIShim(file.path, controllerName, directiveName);
     }
-  } else if (modules.length > 1) {
-    logger.warn(`${file.path}: detected ${modules.length} modules in file.`);
   }
 
+  if (moduleCount > 1) {
+    logger.warn(`${file.path}: detected ${moduleCount} modules in file.`);
+  }
 
   return root.toSource(getDefaultSourceOptions());
 };
