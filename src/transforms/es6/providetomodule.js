@@ -46,13 +46,20 @@ module.exports = (file, api, options) => {
       }
     });
 
+    // create a filter to detect treating the module as a namespace
+    const namespaceMemberExpr = {
+      type: 'MemberExpression',
+      // single namespace path like "os" will be an identifier, while multiple will be a member expression
+      object: moduleName.indexOf('.') > -1 ?
+          createFindMemberExprObject(moduleName) :
+          {type: 'Identifier', name: moduleName}
+    };
+
+    // convert all assignment expressions declaring a property on the namespace and assinging a value
     root.find(jscs.ExpressionStatement, {
       expression: {
         type: 'AssignmentExpression',
-        left: {
-          type: 'MemberExpression',
-          object: createFindMemberExprObject(moduleName)
-        }
+        left: namespaceMemberExpr
       }
     }).forEach(path => {
       if (path.parent.value.type === 'Program') {
@@ -60,11 +67,9 @@ module.exports = (file, api, options) => {
       }
     });
 
+    // convert all expression statements declaring a property on the namespace without assigning the property
     root.find(jscs.ExpressionStatement, {
-      expression: {
-        type: 'MemberExpression',
-        object: createFindMemberExprObject(moduleName)
-      }
+      expression: namespaceMemberExpr
     }).forEach(path => {
       if (path.parent.value.type === 'Program') {
         convertNamespaceExpression(root, path, moduleName);
@@ -72,11 +77,13 @@ module.exports = (file, api, options) => {
     });
   });
 
+  // resolve cases that might cause no-invalid-this eslint errors by using arrow functions instead of inline functions
   const replacedThisCount = resolveThis(root);
   if (replacedThisCount) {
     logger.warn(`${logPath}: [no-invalid-this] converted ${replacedThisCount} inline functions to arrow functions.`);
   }
 
+  // create a shim for backward compatibility if a controller and directive are in the same file
   if (controllerName && directiveName) {
     moduleCount--;
     replaceUIModules(root, controllerName, directiveName);
