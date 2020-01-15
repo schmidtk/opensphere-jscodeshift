@@ -5,6 +5,7 @@ const {isClosureClass, isControllerClass, isDirective, isInterface} = require('.
 const {createUIShim} = require('../../utils/shim');
 const {getDefaultSourceOptions} = require('../../utils/options');
 const {logger} = require('../../utils/logger');
+const {resolveThis} = require('../../utils/resolvethis');
 
 module.exports = (file, api, options) => {
   const root = jscs(file.source);
@@ -68,6 +69,8 @@ module.exports = (file, api, options) => {
       }
     });
   });
+
+  resolveThis(root);
 
   if (controllerName && directiveName) {
     moduleCount--;

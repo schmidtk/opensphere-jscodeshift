@@ -9,4 +9,5 @@ defineTest(__dirname, 'providetomodule', options, 'directive');
 defineTest(__dirname, 'providetomodule', options, 'enum');
 defineTest(__dirname, 'providetomodule', options, 'interface');
 defineTest(__dirname, 'providetomodule', options, 'namespace');
+defineTest(__dirname, 'providetomodule', options, 'resolvethis');
 defineTest(__dirname, 'providetomodule', options, 'ui');

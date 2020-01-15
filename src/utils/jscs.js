@@ -128,6 +128,29 @@ const replaceFunction = (root, options) => {
   });
 };
 
+/**
+ * Replace a function expression with an arrow function.
+ * @param {Node} node The node.
+ */
+const replaceFunctionExpressionWithArrow = (node) => {
+  if (node.type !== 'FunctionExpression') {
+    return null;
+  }
+
+  // if the function body is a single return statement, make that the arrow function body
+  let arrowBody;
+  if (node.body.body.length === 1 && node.body.body[0].type === 'ReturnStatement') {
+    arrowBody = node.body.body[0].argument;
+  } else {
+    arrowBody = node.body;
+  }
+
+  const arrowFn = jscs.arrowFunctionExpression(node.params, arrowBody, node.expression);
+  arrowFn.comments = node.comments;
+
+  return arrowFn;
+};
+
 module.exports = {
   bindArgs,
   createCall,
@@ -135,5 +158,6 @@ module.exports = {
   createFindMemberExprObject,
   createMemberExpression,
   memberExpressionToString,
-  replaceFunction
+  replaceFunction,
+  replaceFunctionExpressionWithArrow
 }

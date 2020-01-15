@@ -17,7 +17,7 @@ const getDefaultSourceOptions = () => {
   return {
     // match ESLint rules
     arrayBracketSpacing: false,
-    arrowParensAlways: false,
+    arrowParensAlways: true,
     objectCurlySpacing: false,
     quote: 'single',
     trailingComma: false,
