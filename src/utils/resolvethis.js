@@ -110,10 +110,12 @@ const PATTERNS = [
 ];
 
 const resolveThis = (root) => {
+  let totalReplaceCount = 0;
+
   PATTERNS.forEach(pattern => {
     root.find(pattern.type, pattern.filter).forEach((path) => {
       const fnArgs = pattern.fnArgs || [];
-      let replacedFns = 0;
+      let patternReplaceCount = 0;
 
       // arrow expressions will always be bound to the current "this" context, so verify the context argument is
       // explicitly provided as "this" before converting to an arrow
@@ -130,13 +132,14 @@ const resolveThis = (root) => {
           const arrowFn = replaceFunctionExpressionWithArrow(argNode);
           if (arrowFn) {
             path.value.arguments[idx] = arrowFn;
-            replacedFns++;
+            patternReplaceCount++;
+            totalReplaceCount++;
           }
         }
       });
 
       // if all configured function expressions were replaced with an arrow function, remove/replace the "this" argument
-      if (pattern.thisArg != null && replacedFns === fnArgs.length) {
+      if (pattern.thisArg != null && patternReplaceCount === fnArgs.length) {
         // remove if it's the last argument, otherwise replace with "undefined"
         if (pattern.thisArg <= path.value.arguments.length - 1) {
           if (pattern.thisArg === path.value.arguments.length - 1) {
@@ -152,6 +155,8 @@ const resolveThis = (root) => {
       }
     });
   });
+
+  return totalReplaceCount;
 };
 
 module.exports = {resolveThis};

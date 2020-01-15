@@ -4,11 +4,13 @@ const {convertNamespaceExpression, convertClass, convertDirective, convertInterf
 const {isClosureClass, isControllerClass, isDirective, isInterface} = require('../../utils/goog');
 const {createUIShim} = require('../../utils/shim');
 const {getDefaultSourceOptions} = require('../../utils/options');
-const {logger} = require('../../utils/logger');
+const {abbreviatePath, logger} = require('../../utils/logger');
 const {resolveThis} = require('../../utils/resolvethis');
 
 module.exports = (file, api, options) => {
   const root = jscs(file.source);
+  const logPath = abbreviatePath(file.path);
+
   const modules = replaceProvidesWithModules(root);
   let moduleCount = modules.length;
 
@@ -25,7 +27,7 @@ module.exports = (file, api, options) => {
         if (!directiveName) {
           directiveName = moduleName;
         } else {
-          logger.warn(`${file.path}: detected multiple directives in file.`);
+          logger.warn(`${logPath}: detected multiple directives in file.`);
         }
 
         convertDirective(root, path, moduleName);
@@ -34,7 +36,7 @@ module.exports = (file, api, options) => {
           if (!controllerName) {
             controllerName = moduleName;
           } else {
-            logger.warn(`${file.path}: detected multiple controllers in file.`);
+            logger.warn(`${logPath}: detected multiple controllers in file.`);
           }
         }
 
@@ -70,7 +72,10 @@ module.exports = (file, api, options) => {
     });
   });
 
-  resolveThis(root);
+  const replacedThisCount = resolveThis(root);
+  if (replacedThisCount) {
+    logger.warn(`${logPath}: [no-invalid-this] converted ${replacedThisCount} inline functions to arrow functions.`);
+  }
 
   if (controllerName && directiveName) {
     moduleCount--;
@@ -82,7 +87,7 @@ module.exports = (file, api, options) => {
   }
 
   if (moduleCount > 1) {
-    logger.warn(`${file.path}: detected ${moduleCount} modules in file.`);
+    logger.warn(`${logPath}: detected ${moduleCount} modules in file.`);
   }
 
   return root.toSource(getDefaultSourceOptions());

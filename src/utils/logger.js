@@ -16,7 +16,15 @@ const logger = winston.createLogger({
   transports: [console]
 });
 
+/**
+ * Abbreviate a file path for log output.
+ * @param {string} path The file path.
+ * @return {string} The abbreviated path.
+ */
+const abbreviatePath = (path) => path.replace(/(\.\.\/)+/, '').replace(/.*\/workspace\//, '');
+
 module.exports = {
-  console: console,
-  logger: logger
+  abbreviatePath,
+  console,
+  logger
 };
