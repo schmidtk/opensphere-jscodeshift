@@ -78,9 +78,11 @@ const createAssignmentShim = (root, path, moduleName, basePath, writeFile) => {
   // remove the assignment from the original file
   jscs(path.parent).remove();
 
-  // require the new module using the var assignment syntax
-  addRequire(root, moduleName);
-  replaceLegacyRequire(root, moduleName);
+  // if the moved module is locally referenced, require it using the assignment syntax
+  if (root.find(jscs.MemberExpression, createFindMemberExprObject(moduleName)).length) {
+    addRequire(root, moduleName);
+    replaceLegacyRequire(root, moduleName);
+  }
 };
 
 

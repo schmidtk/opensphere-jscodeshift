@@ -1,5 +1,6 @@
 const jscs = require('jscodeshift');
 const {createFindMemberExprObject} = require('../../utils/ast');
+const {memberExpressionToString} = require('../../utils/jscs');
 const {convertNamespaceExpression, convertClass, convertDirective, convertInterface, replaceProvidesWithModules, replaceUIModules} = require('../../utils/classes');
 const {isClosureClass, isControllerClass, isDirective, isInterface} = require('../../utils/goog');
 const {createAssignmentShim, createUIShim} = require('../../utils/shim');
@@ -68,7 +69,9 @@ module.exports = (file, api, options) => {
         left: namespaceMemberExpr
       }
     }).forEach(path => {
-      if (path.parent.value.type === 'Program') {
+      // only convert if the expression is at the root level of the file, and isn't a provided module
+      if (path.parent.value.type === 'Program' &&
+          modules.indexOf(memberExpressionToString(path.value.expression.left)) === -1) {
         convertNamespaceExpression(root, path, moduleName);
       }
     });
