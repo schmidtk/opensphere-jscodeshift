@@ -1,7 +1,9 @@
 const jscs = require('jscodeshift');
+
+const {createFindCallFn, createFindMemberExprObject} = require('./ast');
 const {getClassNode, registerClassNode} = require('./classregistry');
 const {addExports, isPrivate, isControllerClass} = require('./goog');
-const {createCall, createFindCallFn, createFindMemberExprObject, createMemberExpression, memberExpressionToString} = require('./jscs');
+const {createCall, createMemberExpression, memberExpressionToString} = require('./jscs');
 const {logger} = require('./logger');
 
 /**

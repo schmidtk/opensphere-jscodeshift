@@ -1,8 +1,8 @@
 const jscs = require('jscodeshift');
-const {createFindMemberExprObject} = require('../../utils/jscs');
+const {createFindMemberExprObject} = require('../../utils/ast');
 const {convertNamespaceExpression, convertClass, convertDirective, convertInterface, replaceProvidesWithModules, replaceUIModules} = require('../../utils/classes');
 const {isClosureClass, isControllerClass, isDirective, isInterface} = require('../../utils/goog');
-const {createUIShim} = require('../../utils/shim');
+const {createAssignmentShim, createUIShim} = require('../../utils/shim');
 const {getDefaultSourceOptions} = require('../../utils/options');
 const {abbreviatePath, logger} = require('../../utils/logger');
 const {resolveThis} = require('../../utils/resolvethis');
@@ -41,8 +41,14 @@ module.exports = (file, api, options) => {
         }
 
         convertClass(root, path, moduleName);
-      } else {
+      } else if (modules.length === 1) {
+        // the only module in the file is a direct assignment, so assign it as the default export
         path.value.left = jscs.identifier('exports');
+      } else if (modules.length > 1) {
+        // this typically happens when the file has a class and some const/enum properties that are also provided. to
+        // fix without breaking changes, move the extra provide to a new file.
+        const filePath = file.path.replace(/\/[^/]+$/, '');
+        createAssignmentShim(root, path, moduleName, filePath, !options.dry);
       }
     });
 

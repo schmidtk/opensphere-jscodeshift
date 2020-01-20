@@ -1,10 +1,14 @@
 const jscs = require('jscodeshift');
 
+const {createFindMemberExprObject, hasVar, isCall} = require('./ast');
+
+
 /**
  * Regular expression to detect @const JSDoc annotation.
  * @type {RegExp}
  */
 const CONST_REGEXP = /@const([\s]+.*)?/;
+
 
 const getObjectProperty = (key, value) => {
   const property = jscs.property('init', jscs.identifier(key), value || jscs.identifier(key));
@@ -12,10 +16,12 @@ const getObjectProperty = (key, value) => {
   return property;
 };
 
+
 const getObjectProperties = (keys, values) => {
   return typeof keys === 'string' ? [getObjectProperty(keys, values)] :
       keys.map((key, idx, arr) => getObjectProperty(key, values ? values[idx] : undefined));
 };
+
 
 /**
  * Add exports to the source.
@@ -66,19 +72,54 @@ const addExports = (root, keys, values) => {
   }
 };
 
+
+/**
+ * If a node is a `goog.module.declareLegacyNamespace` call.
+ * @param {Node} node The node.
+ * @return {boolean}
+ */
+const isGoogDeclareLegacyNamespace = node => {
+  return node.type === 'ExpressionStatement' && isCall(node.expression, 'goog.module.declareLegacyNamespace');
+};
+
+
+/**
+ * If a node is a `goog.module` call.
+ * @param {Node} node The node.
+ * @return {boolean}
+ */
+const isGoogModule = node => {
+  return node.type === 'ExpressionStatement' && isCall(node.expression, 'goog.module');
+};
+
+
+/**
+ * If a node is a `goog.array.find` call.
+ * @param {Node} node The node.
+ * @return {boolean}
+ */
+const isGoogModuleRequire = node => {
+  return node.type === 'VariableDeclaration' && jscs.match(node, {
+    declarations: [{
+      type: 'VariableDeclarator',
+      init: {
+        type: 'CallExpression',
+        callee: createFindMemberExprObject('goog.require')
+      }
+    }]
+  });
+};
+
+
 /**
  * If a node is a `goog.array.find` call.
  * @param {Node} node The node.
  * @return {boolean}
  */
 const isGoogRequire = node => {
-  return node.type === 'CallExpression' && jscs.match(node, {
-    callee: {
-      object: {name: 'goog'},
-      property: {name: 'require'}
-    }
-  });
+  return node.type === 'ExpressionStatement' && isCall(node.expression, 'goog.require');
 };
+
 
 /**
  * If a node is a `goog.array.find` call.
@@ -86,13 +127,9 @@ const isGoogRequire = node => {
  * @return {boolean}
  */
 const isGoogProvide = node => {
-  return node.type === 'CallExpression' && jscs.match(node, {
-    callee: {
-      object: {name: 'goog'},
-      property: {name: 'provide'}
-    }
-  });
+  return node.type === 'ExpressionStatement' && isCall(node.expression, 'goog.provide');
 };
+
 
 /**
  * If a node represents a Closure class constructor.
@@ -106,6 +143,7 @@ const isClosureClass = node => {
   return false;
 };
 
+
 /**
  * If a node represents a Closure class constructor.
  * @param {Node} node The node.
@@ -117,6 +155,7 @@ const isControllerClass = node => {
   }
   return false;
 };
+
 
 /**
  * If a node represents a Closure class constructor.
@@ -130,6 +169,7 @@ const isDirective = node => {
   return false;
 };
 
+
 /**
  * If a node represents an interface.
  * @param {Node} node The node.
@@ -141,6 +181,7 @@ const isInterface = node => {
   }
   return false;
 };
+
 
 /**
  * If a node is marked constant in its comments.
@@ -154,6 +195,7 @@ const isConst = (node) => {
   return false;
 };
 
+
 /**
  * If a node is marked private in its comments.
  * @param {Node} node The node.
@@ -166,59 +208,119 @@ const isPrivate = (node) => {
   return false;
 };
 
+
 /**
  * Add a goog.require statement if it doesn't already exist.
  * @param {Node} root The root node.
  * @param {string} toAdd The require to add.
  */
 const addRequire = (root, toAdd) => {
-  const requires = root.find(jscs.CallExpression, isGoogRequire);
-  if (!requires.some(path => path.node.arguments[0].value === toAdd)) {
-    let paths = requires.paths();
-    if (!paths.length) {
-      const provides = root.find(jscs.CallExpression, isGoogProvide);
-      paths = provides.paths();
-    }
+  const requires = root.find(jscs.ExpressionStatement, isGoogRequire);
+  if (!requires.some(path => path.node.expression.arguments[0].value === toAdd)) {
+    const program = root.find(jscs.Program).get();
+    const programBody = program.value.body;
+    for (let i = 0; i < programBody.length; i++) {
+      const current = programBody[i];
+      if (!isGoogModule(current) && !isGoogDeclareLegacyNamespace(current) && !isGoogProvide(current)) {
+        const insertIndex = isGoogRequire(current) ? i + 1 : i;
+        const callee = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier('require'));
+        const call = jscs.callExpression(callee, [jscs.literal(toAdd)]);
+        programBody.splice(insertIndex, 0, jscs.expressionStatement(call));
 
-    if (paths.length) {
-      const callee = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier('require'));
-      const call = jscs.callExpression(callee, [jscs.literal(toAdd)]);
-      paths[0].parent.insertAfter(jscs.expressionStatement(call));
-      sortRequires(root);
+        sortRequires(root);
+
+        break;
+      }
     }
   }
 };
+
+
+/**
+ * Replace a legacy goog.require statement to use the module return value.
+ * @param {Node} root The root node.
+ * @param {string} toReplace The require to replace.
+ */
+const replaceLegacyRequire = (root, toReplace) => {
+  // find existing goog.require calls for the module
+  const existingCalls = root.find(jscs.ExpressionStatement, {
+    expression: {
+      callee: createFindMemberExprObject('goog.require'),
+      arguments: [{value: toReplace}]
+    }
+  });
+
+  if (existingCalls.length) {
+    const program = root.find(jscs.Program).get();
+    if (!program) {
+      return;
+    }
+
+    // remove existing goog.require calls for the module
+    existingCalls.remove();
+
+    // create a variable name that doesn't shadow another within the file
+    const moduleParts = toReplace.split('.');
+    let varName = moduleParts.pop();
+    while (hasVar(root, varName) && moduleParts.length) {
+      varName = `${moduleParts}.pop()$${varName}`;
+    }
+
+    // create the variable declaration
+    const callee = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier('require'));
+    const call = jscs.callExpression(callee, [jscs.literal(toReplace)]);
+    const varDeclarator = jscs.variableDeclarator(jscs.identifier(varName), call);
+    const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
+
+    // insert the declaration after goog.module and legacy goog.require statements
+    const programBody = program.value.body;
+    for (let i = 0; i < programBody.length; i++) {
+      const current = programBody[i];
+      if (!isGoogModule(current) && !isGoogDeclareLegacyNamespace(current) && !isGoogProvide(current) && !isGoogRequire(current)) {
+        programBody.splice(i, 0, varDeclaration);
+        break;
+      }
+    }
+
+    // replace references to the fully qualified class name with the local variable name
+    root.find(jscs.MemberExpression, createFindMemberExprObject(toReplace))
+        .forEach(path => jscs(path).replaceWith(jscs.identifier(varName)));
+  }
+};
+
 
 /**
  * Sort goog.require statements.
  * @param {Node} root The root node.
  */
 const sortRequires = root => {
-  const requires = [];
+  const requires = root.find(jscs.ExpressionStatement, isGoogRequire)
+      .nodes()
+      .map(node => node.expression.arguments[0].value)
+      .sort();
 
-  root.find(jscs.CallExpression, isGoogRequire).forEach(path => {
-    requires.push(path.value.arguments[0].value);
-  });
-
-  requires.sort();
-
-  root.find(jscs.CallExpression, isGoogRequire).forEach((path, idx, arr) => {
+  root.find(jscs.ExpressionStatement, isGoogRequire).forEach((path, idx, arr) => {
     const callee = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier('require'));
     const call = jscs.callExpression(callee, [jscs.literal(requires[idx])]);
-    jscs(path).replaceWith(call);
+    jscs(path).replaceWith(jscs.expressionStatement(call));
   });
 };
+
 
 module.exports = {
   addExports,
   addRequire,
+  isGoogDeclareLegacyNamespace,
+  isGoogModule,
   isGoogProvide,
   isGoogRequire,
+  isGoogModuleRequire,
   isClosureClass,
   isControllerClass,
   isDirective,
   isInterface,
   isConst,
   isPrivate,
+  replaceLegacyRequire,
   sortRequires
 };

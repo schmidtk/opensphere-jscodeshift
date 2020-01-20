@@ -1,5 +1,5 @@
 const jscs = require('jscodeshift');
-const {createFindMemberExprObject, replaceFunctionExpressionWithArrow} = require('./jscs');
+const {createFindMemberExprObject, replaceFunctionExpressionWithArrow} = require('./ast');
 
 const googBindAfterReplace = (path) => {
   if (path.value.arguments.length === 1) {
