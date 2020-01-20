@@ -2,7 +2,6 @@ const fs = require('fs');
 const jscs = require('jscodeshift');
 
 const {createFindMemberExprObject} = require('./ast');
-const {addRequire, replaceLegacyRequire} = require('./goog');
 const {createCall, createMemberExpression} = require('./jscs');
 const {getDefaultSourceOptions} = require('./options');
 const {logger} = require('./logger');
@@ -61,7 +60,7 @@ const createAssignmentShim = (root, path, moduleName, basePath, writeFile) => {
     // generate a unique file name and write the file
     const fileName = getUniqueFileNameForModule(moduleName, basePath);
     const filePath = `${basePath}/${fileName}`;
-    logger.warn(`Moving assignment to new module: ${filePath}`);
+    logger.warn(`Creating new module: ${filePath}`);
 
     const fileSource = jscs(program).toSource(getDefaultSourceOptions());
     fs.writeFileSync(filePath, `${fileSource}\n`, 'utf8');
@@ -77,12 +76,6 @@ const createAssignmentShim = (root, path, moduleName, basePath, writeFile) => {
 
   // remove the assignment from the original file
   jscs(path.parent).remove();
-
-  // if the moved module is locally referenced, require it using the assignment syntax
-  if (root.find(jscs.MemberExpression, createFindMemberExprObject(moduleName)).length) {
-    addRequire(root, moduleName);
-    replaceLegacyRequire(root, moduleName);
-  }
 };
 
 

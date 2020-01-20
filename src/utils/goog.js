@@ -242,50 +242,46 @@ const addRequire = (root, toAdd) => {
  * @param {string} toReplace The require to replace.
  */
 const replaceLegacyRequire = (root, toReplace) => {
-  // find existing goog.require calls for the module
-  const existingCalls = root.find(jscs.ExpressionStatement, {
+  // remove existing goog.require calls for the module
+  root.find(jscs.ExpressionStatement, {
     expression: {
       callee: createFindMemberExprObject('goog.require'),
       arguments: [{value: toReplace}]
     }
-  });
+  }).remove();
 
-  if (existingCalls.length) {
-    const program = root.find(jscs.Program).get();
-    if (!program) {
-      return;
-    }
-
-    // remove existing goog.require calls for the module
-    existingCalls.remove();
-
-    // create a variable name that doesn't shadow another within the file
-    const moduleParts = toReplace.split('.');
-    let varName = moduleParts.pop();
-    while (hasVar(root, varName) && moduleParts.length) {
-      varName = `${moduleParts}.pop()$${varName}`;
-    }
-
-    // create the variable declaration
-    const callee = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier('require'));
-    const call = jscs.callExpression(callee, [jscs.literal(toReplace)]);
-    const varDeclarator = jscs.variableDeclarator(jscs.identifier(varName), call);
-    const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
-
-    // insert the declaration after goog.module and legacy goog.require statements
-    const programBody = program.value.body;
-    for (let i = 0; i < programBody.length; i++) {
-      const current = programBody[i];
-      if (!isGoogModule(current) && !isGoogDeclareLegacyNamespace(current) && !isGoogProvide(current) && !isGoogRequire(current)) {
-        programBody.splice(i, 0, varDeclaration);
-        break;
-      }
-    }
-
-    // replace references to the fully qualified class name with the local variable name
-    root.find(jscs.MemberExpression, createFindMemberExprObject(toReplace))
-        .forEach(path => jscs(path).replaceWith(jscs.identifier(varName)));
+  // bail if the module isn't referenced in the file
+  if (!root.find(jscs.MemberExpression, createFindMemberExprObject(toReplace)).length) {
+    return;
   }
+
+  // create a variable name that doesn't shadow any local vars
+  const moduleParts = toReplace.split('.');
+  let varName = moduleParts.pop();
+  while (hasVar(root, varName) && moduleParts.length) {
+    varName = `${moduleParts}.pop()$${varName}`;
+  }
+
+  // create the variable declaration
+  const callee = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier('require'));
+  const call = jscs.callExpression(callee, [jscs.literal(toReplace)]);
+  const varDeclarator = jscs.variableDeclarator(jscs.identifier(varName), call);
+  const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
+
+  // insert the declaration after goog.module and legacy goog.require statements
+  const program = root.find(jscs.Program).get();
+  const programBody = program.value.body;
+  for (let i = 0; i < programBody.length; i++) {
+    const current = programBody[i];
+    if (!isGoogModule(current) && !isGoogDeclareLegacyNamespace(current) && !isGoogProvide(current) && !isGoogRequire(current)) {
+      programBody.splice(i, 0, varDeclaration);
+      break;
+    }
+  }
+
+  // replace references to the fully qualified class name with the local variable name
+  root.find(jscs.MemberExpression, createFindMemberExprObject(toReplace))
+      .forEach(path => jscs(path).replaceWith(jscs.identifier(varName)));
 };
 
 

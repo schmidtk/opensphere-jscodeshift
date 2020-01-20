@@ -2,7 +2,7 @@ const jscs = require('jscodeshift');
 const {createFindMemberExprObject} = require('../../utils/ast');
 const {memberExpressionToString} = require('../../utils/jscs');
 const {convertNamespaceExpression, convertClass, convertDirective, convertInterface, replaceProvidesWithModules, replaceUIModules} = require('../../utils/classes');
-const {isClosureClass, isControllerClass, isDirective, isInterface} = require('../../utils/goog');
+const {addRequire, isClosureClass, isControllerClass, isDirective, isInterface, replaceLegacyRequire} = require('../../utils/goog');
 const {createAssignmentShim, createUIShim} = require('../../utils/shim');
 const {getDefaultSourceOptions} = require('../../utils/options');
 const {abbreviatePath, logger} = require('../../utils/logger');
@@ -13,6 +13,7 @@ module.exports = (file, api, options) => {
   const logPath = abbreviatePath(file.path);
 
   const modules = replaceProvidesWithModules(root);
+  const movedModules = [];
   let moduleCount = modules.length;
 
   let directiveName;
@@ -50,6 +51,8 @@ module.exports = (file, api, options) => {
         // fix without breaking changes, move the extra provide to a new file.
         const filePath = file.path.replace(/\/[^/]+$/, '');
         createAssignmentShim(root, path, moduleName, filePath, !options.dry);
+        movedModules.push(moduleName);
+        moduleCount--;
       }
     });
 
@@ -101,6 +104,14 @@ module.exports = (file, api, options) => {
       createUIShim(file.path, controllerName, directiveName);
     }
   }
+
+  // use module require syntax for all modules that were moved to another file and referenced locally
+  movedModules.forEach(name => {
+    if (root.find(jscs.MemberExpression, createFindMemberExprObject(name)).length) {
+      addRequire(root, name);
+      replaceLegacyRequire(root, name);
+    }
+  });
 
   if (moduleCount > 1) {
     logger.warn(`${logPath}: detected ${moduleCount} modules in file.`);
