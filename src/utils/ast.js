@@ -1,4 +1,29 @@
 const jscs = require('jscodeshift');
+const camelcase = require('camelcase');
+
+
+/**
+ * Native identifiers to avoid shadowing with a variable.
+ * @type {!Array<string>}
+ * @const
+ */
+const NATIVE_IDENTIFIERS = [
+  // Types
+  'Array',
+  'Boolean',
+  'Function',
+  'Number',
+  'Object',
+  'String',
+
+  // null/undefined
+  'null',
+  'undefined',
+
+  // ES6 constructs
+  'Map',
+  'Set'
+];
 
 
 /**
@@ -43,13 +68,63 @@ const createFindMemberExprObject = (memberPath) => {
 
 
 /**
+ * Create a var name from a list of parts.
+ * @param {!Array<string>} parts The parts. These will be combined in camelcase.
+ * @param {string|undefined} prefix The prefix to add.
+ * @param {string|undefined} suffix The suffix to add.
+ * @return {string} The var name.
+ */
+const getVarName = (parts, prefix, suffix) => {
+  prefix = prefix || '';
+  suffix = suffix || '';
+
+  //
+  // If only one part is provided, use it. Otherwise combine them in camelcase.
+  //
+  const baseName = parts.length === 1 ? parts[0] : camelcase(parts.join('-'));
+
+  return `${prefix}${baseName}${suffix}`;
+};
+
+
+/**
+ * Get a unique variable name to use within the scope of the provided path.
+ * @param {NodePath} root The scope's node path.
+ * @param {string} originalName The original dot-delimited name.
+ * @param {string|undefined} prefix Prefix for the variable name.
+ * @return {string} The variable name.
+ */
+const getUniqueVarName = (root, originalName, prefix) => {
+  const moduleParts = originalName.split('.');
+  prefix = prefix || '';
+
+  // try the last part of the module name first
+  let varName = `${prefix}${moduleParts[moduleParts.length - 1]}`;
+
+  // if that doesn't work, camelcase the parts
+  if (hasVar(root, varName)) {
+    varName = getVarName(moduleParts, prefix);
+  }
+
+  // if that still doesn't work, add a counter
+  let i = 1;
+  while (hasVar(root, varName)) {
+    varName = getVarName(moduleParts, prefix, i++);
+  }
+
+  return varName;
+};
+
+
+/**
  * If a variable name is declared within the file.
  * @param {NodePath} root The root node.
  * @param {string} varName The variable name.
  * @return {boolean} If the variable is declared in the file.
  */
 const hasVar = (root, varName) => {
-  return root.find(jscs.VariableDeclarator, {id: {name: varName}}).length > 0;
+  return NATIVE_IDENTIFIERS.indexOf(varName) > -1 ||
+      root.find(jscs.VariableDeclarator, {id: {name: varName}}).length > 0;
 };
 
 
@@ -93,6 +168,7 @@ const replaceFunctionExpressionWithArrow = (node) => {
 module.exports = {
   createFindCallFn,
   createFindMemberExprObject,
+  getUniqueVarName,
   hasVar,
   isCall,
   replaceFunctionExpressionWithArrow

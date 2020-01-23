@@ -1,6 +1,6 @@
 const jscs = require('jscodeshift');
 
-const {createFindCallFn, createFindMemberExprObject} = require('./ast');
+const {createFindCallFn, createFindMemberExprObject, getUniqueVarName} = require('./ast');
 const {getClassNode, registerClassNode} = require('./classregistry');
 const {addExports, isConst, isPrivate, isControllerClass} = require('./goog');
 const {createCall, createMemberExpression, memberExpressionToString} = require('./jscs');
@@ -465,16 +465,27 @@ const convertGoogDefine = (root, path, modules) => {
     root.find(jscs.MemberExpression, createFindMemberExprObject(fullDefine))
         .forEach(path => jscs(path).replaceWith(exportsMemberExpr));
   } else {
-    const varIdentifier = jscs.identifier(defineName);
-    const varDeclarator = jscs.variableDeclarator(varIdentifier, path.value.expression);
-    const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
-    varDeclaration.comments = path.value.comments;
+    const localRefs = fullDefine.indexOf('.') > -1 ?
+        // dot-delimited, find member expression
+        root.find(jscs.MemberExpression, createFindMemberExprObject(fullDefine)) :
+        // find identifier
+        root.find(jscs.Identifier, {name: fullDefine});
 
-    jscs(path).replaceWith(varDeclaration);
+    if (localRefs.length) {
+      //
+      // prefix with _ to avoid matching a duplicate define name on another namespace (ex: ROOT + os.ROOT).
+      //
+      const varName = getUniqueVarName(root, fullDefine, '_');
+      const varIdentifier = jscs.identifier(varName);
+      const varDeclarator = jscs.variableDeclarator(varIdentifier, path.value.expression);
+      const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
+      varDeclaration.comments = path.value.comments;
 
-    // replace references to the define with the variable
-    root.find(jscs.MemberExpression, createFindMemberExprObject(fullDefine))
-        .forEach(path => jscs(path).replaceWith(varIdentifier));
+      jscs(path).replaceWith(varDeclaration);
+
+      // replace references to the define with the variable
+      localRefs.forEach(path => jscs(path).replaceWith(varIdentifier));
+    }
   }
 };
 

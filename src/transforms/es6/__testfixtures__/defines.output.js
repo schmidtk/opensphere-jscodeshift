@@ -12,12 +12,17 @@ exports.PROPERTY_ON_NS = goog.define('os.ns1.PROPERTY_ON_NS', 'Hello');
 /**
  * @define {string} Example of a define on a child of the provided namespace.
  */
-const PROPERTY_ON_CHILD_NS = goog.define('os.ns1.other.PROPERTY_ON_CHILD_NS', 'World');
+const _PROPERTY_ON_CHILD_NS = goog.define('os.ns1.other.PROPERTY_ON_CHILD_NS', 'World');
 
 /**
  * @define {string} Example of a define on the parent of the provided namespace.
  */
-const PROPERTY_ON_PARENT_NS = goog.define('os.PROPERTY_ON_PARENT_NS', '!!!');
+const _PROPERTY_ON_PARENT_NS = goog.define('os.PROPERTY_ON_PARENT_NS', '!!!');
+
+/**
+ * @define {string} Example of a duplicate named define not on the provided namespace.
+ */
+const _PROPERTY_ON_PARENT_NS1 = goog.define('PROPERTY_ON_PARENT_NS', '!!!');
 
 
 /**
@@ -40,7 +45,7 @@ exports.getPropertyOnNs = function() {
  * @return {string}
  */
 exports.getPropertyOnChildNs = function() {
-  return PROPERTY_ON_CHILD_NS;
+  return _PROPERTY_ON_CHILD_NS;
 };
 
 
@@ -49,7 +54,16 @@ exports.getPropertyOnChildNs = function() {
  * @return {string}
  */
 exports.getPropertyOnParentNs = function() {
-  return PROPERTY_ON_PARENT_NS;
+  return _PROPERTY_ON_PARENT_NS;
+};
+
+
+/**
+ * Get the duplicate named define on the parent namespace.
+ * @return {string}
+ */
+exports.getDuplicatePropertyOnParentNs = function() {
+  return _PROPERTY_ON_PARENT_NS1;
 };
 
 

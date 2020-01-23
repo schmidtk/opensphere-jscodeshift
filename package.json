@@ -23,6 +23,7 @@
     "rimraf": "^2.6.2"
   },
   "dependencies": {
+    "camelcase": "^5.3.1",
     "colors": "^1.4.0",
     "get-value": "^3.0.1",
     "jscodeshift": "^0.7.0",

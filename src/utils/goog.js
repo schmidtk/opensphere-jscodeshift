@@ -1,6 +1,6 @@
 const jscs = require('jscodeshift');
 
-const {createFindMemberExprObject, hasVar, isCall} = require('./ast');
+const {createFindMemberExprObject, getUniqueVarName, isCall} = require('./ast');
 
 
 /**
@@ -266,11 +266,7 @@ const replaceLegacyRequire = (root, toReplace) => {
   }
 
   // create a variable name that doesn't shadow any local vars
-  const moduleParts = toReplace.split('.');
-  let varName = moduleParts.pop();
-  while (hasVar(root, varName) && moduleParts.length) {
-    varName = `${moduleParts}.pop()$${varName}`;
-  }
+  const varName = getUniqueVarName(root, toReplace);
 
   // create the variable declaration
   const callee = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier('require'));
