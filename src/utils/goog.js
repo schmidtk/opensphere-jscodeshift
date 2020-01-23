@@ -84,6 +84,16 @@ const isGoogDeclareLegacyNamespace = node => {
 
 
 /**
+ * If a node is a `goog.define` call.
+ * @param {Node} node The node.
+ * @return {boolean}
+ */
+const isGoogDefine = node => {
+  return node.type === 'ExpressionStatement' && isCall(node.expression, 'goog.define');
+};
+
+
+/**
  * If a node is a `goog.module` call.
  * @param {Node} node The node.
  * @return {boolean}
@@ -307,6 +317,7 @@ module.exports = {
   addExports,
   addRequire,
   isGoogDeclareLegacyNamespace,
+  isGoogDefine,
   isGoogModule,
   isGoogProvide,
   isGoogRequire,

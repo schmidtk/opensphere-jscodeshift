@@ -328,25 +328,33 @@ const replaceSuperclassWithSuper = (path, moduleName) => {
  */
 const replaceProvidesWithModules = (root) => {
   const modules = [];
+  const moduleExpressions = [];
   const findFn = createFindCallFn('goog.provide');
   root.find(jscs.CallExpression, findFn).forEach((path, idx, paths) => {
-    const programBody = root.find(jscs.Program).get().value.body;
     const args = path.value.arguments;
     modules.push(args[0].value);
 
     const oldComments = path.parent.value.comments;
+
+    // remove the goog.provide statement
     jscs(path).remove();
 
-    if (!idx) {
-      programBody.unshift(jscs.expressionStatement(createCall('goog.module.declareLegacyNamespace', [])));
-    }
-
+    // create the goog.module statement
     const googModuleExpr = jscs.expressionStatement(createCall('goog.module', args));
     if (oldComments) {
       googModuleExpr.comments = oldComments.map(c => jscs.commentBlock(c.value));
     }
-    programBody.unshift(googModuleExpr);
+    moduleExpressions.push(googModuleExpr);
   });
+
+  if (moduleExpressions.length) {
+    // include the legacy namespace statement for compatibility with old code
+    moduleExpressions.push(jscs.expressionStatement(createCall('goog.module.declareLegacyNamespace', [])))
+
+    // add the modules to the body
+    const program = root.find(jscs.Program).get().value;
+    program.body = moduleExpressions.concat(program.body);
+  }
 
   return modules;
 };
@@ -430,7 +438,45 @@ const isReassigned = (root, moduleName, propName) => {
       property: {name: propName}
     }
   }).length > 1;
-}
+};
+
+/**
+ * Converts goog.define statements.
+ *
+ *  - Exports the value if the define is on a provided namespace.
+ *  - Otherwise, assigns the value to a constant to reference locally. Value is not exported.
+ *
+ * @param {NodePath} root The root node path.
+ * @param {NodePath} path The node path.
+ * @param {!Array<string>} modules Modules detected in the file.
+ */
+const convertGoogDefine = (root, path, modules) => {
+  const fullDefine = path.value.expression.arguments[0].value;
+  const defineParts = fullDefine.split('.');
+  const defineName = defineParts.pop();
+  const defineNs = defineParts.join('.');
+
+  if (modules.indexOf(defineNs) > -1) {
+    // assign the define to "exports.<name>" and replace references in the file
+    const exportsMemberExpr = createMemberExpression(`exports.${defineName}`);
+    path.value.expression = jscs.assignmentExpression('=', exportsMemberExpr, path.value.expression);
+
+    // replace references to the define with the exported value
+    root.find(jscs.MemberExpression, createFindMemberExprObject(fullDefine))
+        .forEach(path => jscs(path).replaceWith(exportsMemberExpr));
+  } else {
+    const varIdentifier = jscs.identifier(defineName);
+    const varDeclarator = jscs.variableDeclarator(varIdentifier, path.value.expression);
+    const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
+    varDeclaration.comments = path.value.comments;
+
+    jscs(path).replaceWith(varDeclaration);
+
+    // replace references to the define with the variable
+    root.find(jscs.MemberExpression, createFindMemberExprObject(fullDefine))
+        .forEach(path => jscs(path).replaceWith(varIdentifier));
+  }
+};
 
 const convertNamespaceExpression = (root, path, moduleName) => {
   const expression = path.value.expression;
@@ -542,6 +588,7 @@ const convertClass = (root, path, moduleName) => {
 module.exports = {
   addMethodToClass,
   addStaticGetToClass,
+  convertGoogDefine,
   convertNamespaceExpression,
   convertClass,
   convertDirective,

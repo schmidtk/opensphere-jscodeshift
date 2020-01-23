@@ -1,8 +1,8 @@
 const jscs = require('jscodeshift');
 const {createFindMemberExprObject} = require('../../utils/ast');
 const {memberExpressionToString} = require('../../utils/jscs');
-const {convertNamespaceExpression, convertClass, convertDirective, convertInterface, replaceProvidesWithModules, replaceUIModules} = require('../../utils/classes');
-const {addRequire, isClosureClass, isControllerClass, isDirective, isInterface, replaceLegacyRequire} = require('../../utils/goog');
+const {convertGoogDefine, convertNamespaceExpression, convertClass, convertDirective, convertInterface, replaceProvidesWithModules, replaceUIModules} = require('../../utils/classes');
+const {addRequire, isClosureClass, isControllerClass, isDirective, isGoogDefine, isInterface, replaceLegacyRequire} = require('../../utils/goog');
 const {createAssignmentShim, createUIShim} = require('../../utils/shim');
 const {getDefaultSourceOptions} = require('../../utils/options');
 const {abbreviatePath, logger} = require('../../utils/logger');
@@ -65,7 +65,7 @@ module.exports = (file, api, options) => {
           {type: 'Identifier', name: moduleName}
     };
 
-    // convert all assignment expressions declaring a property on the namespace and assinging a value
+    // convert assignment expressions declaring a property on the namespace and assinging a value
     root.find(jscs.ExpressionStatement, {
       expression: {
         type: 'AssignmentExpression',
@@ -79,7 +79,7 @@ module.exports = (file, api, options) => {
       }
     });
 
-    // convert all expression statements declaring a property on the namespace without assigning the property
+    // convert expression statements declaring a property on the namespace without assigning the property
     root.find(jscs.ExpressionStatement, {
       expression: namespaceMemberExpr
     }).forEach(path => {
@@ -87,6 +87,13 @@ module.exports = (file, api, options) => {
         convertNamespaceExpression(root, path, moduleName);
       }
     });
+  });
+
+  // convert goog.define statements
+  root.find(jscs.ExpressionStatement, isGoogDefine).forEach(path => {
+    if (path.parent.value.type === 'Program') {
+      convertGoogDefine(root, path, modules);
+    }
   });
 
   // resolve cases that might cause no-invalid-this eslint errors by using arrow functions instead of inline functions
