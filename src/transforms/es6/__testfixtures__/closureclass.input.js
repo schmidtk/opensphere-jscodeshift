@@ -79,6 +79,14 @@ os.ns.MyClass.PRIVATE_CONSTANT_ = 'World';
 
 
 /**
+ * A private property on the class.
+ * @type {string}
+ * @private
+ */
+os.ns.MyClass.foo_ = 'bar';
+
+
+/**
  * A function on the class.
  * @param {string} arg1 First arg.
  * @param {number=} opt_arg2 Optional second arg.

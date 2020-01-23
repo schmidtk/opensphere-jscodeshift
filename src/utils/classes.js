@@ -2,7 +2,7 @@ const jscs = require('jscodeshift');
 
 const {createFindCallFn, createFindMemberExprObject} = require('./ast');
 const {getClassNode, registerClassNode} = require('./classregistry');
-const {addExports, isPrivate, isControllerClass} = require('./goog');
+const {addExports, isConst, isPrivate, isControllerClass} = require('./goog');
 const {createCall, createMemberExpression, memberExpressionToString} = require('./jscs');
 const {logger} = require('./logger');
 
@@ -71,20 +71,47 @@ const addMethodToClass = (moduleName, methodName, methodValue, isStatic, kind) =
 const addStaticGetToClass = (path, moduleName) => {
   const classDef = getClassNode(moduleName);
   if (classDef) {
-    const propertyName = path.value.left.property.name;
+    const varIdentifier = jscs.identifier(path.value.left.property.name);
+    const isConstant = isConst(path.parent.value);
 
-    const getBlock = jscs.blockStatement([jscs.returnStatement(path.value.right)]);
+    const oldComments = path.parent.value.comments;
+    let newComment;
+    if (oldComments && oldComments.length) {
+      newComment = oldComments[0].value
+          .replace('\n * @const', '')
+          .replace('@return ', '@type ');
+    }
+
+    // replace the current definition with the variable referenced by get/set
+    const varDeclarator = jscs.variableDeclarator(varIdentifier, path.value.right);
+    const varDeclaration = jscs.variableDeclaration(isConstant ? 'const' : 'let', [varDeclarator]);
+    varDeclaration.comments = [jscs.commentBlock(newComment)];
+
+    jscs(path.parent).replaceWith(varDeclaration);
+
+    // create the static get block
+    const getBlock = jscs.blockStatement([jscs.returnStatement(varIdentifier)]);
     const getFn = jscs.functionExpression(null, [], getBlock);
-    const staticGet = jscs.methodDefinition('get', jscs.identifier(propertyName), getFn, true);
+    const staticGet = jscs.methodDefinition('get', varIdentifier, getFn, true);
 
-    if (path.parent.value.comments && path.parent.value.comments.length) {
-      const newComment = path.parent.value.comments[0].value.replace('\n * @const', '');
+    // add comments to the static get. they will not be added to the static set to avoid duplicate doc entries.
+    if (newComment) {
       staticGet.comments = [jscs.commentBlock(newComment)];
     }
 
     classDef.body.body.push(staticGet);
 
-    jscs(path).remove();
+    // create the static set block if the property isn't a constant
+    if (!isConstant) {
+      const valueIdentifier = jscs.identifier('value');
+      const setBlock = jscs.blockStatement([jscs.expressionStatement(
+        jscs.assignmentExpression('=', varIdentifier, valueIdentifier)
+      )]);
+      const setFn = jscs.functionExpression(null, [valueIdentifier], setBlock);
+      const staticSet = jscs.methodDefinition('set', varIdentifier, setFn, true);
+
+      classDef.body.body.push(staticSet);
+    }
   }
 };
 

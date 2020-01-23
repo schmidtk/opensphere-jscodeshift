@@ -135,6 +135,14 @@ MyClass.PRIVATE_CONSTANT_ = 'World';
 
 
 /**
+ * A private property on the class.
+ * @type {string}
+ * @private
+ */
+MyClass.foo_ = 'bar';
+
+
+/**
  * @inheritDoc
  */
 MyClass.prototype.overrideToExpression = goog.nullFunction;
