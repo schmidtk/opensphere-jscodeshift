@@ -1,5 +1,36 @@
 const jscs = require('jscodeshift');
 const camelcase = require('camelcase');
+const reserved = require('reserved-words');
+
+
+/**
+ * Variable names that are disallowed due to conflicts with JS or the compiler. Most language-specific words are
+ * detected by reserved-words.
+ * @type {!Array<string>}
+ */
+const DISALLOWED_VARS = [
+  // Types
+  'Array',
+  'Boolean',
+  'Function',
+  'Number',
+  'Object',
+  'String',
+
+  // JSDoc types
+  'boolean',
+  'function',
+  'number',
+  'string',
+
+  // Special values not handled by reserved-words
+  'undefined',
+  'NaN',
+
+  // JS/Closure keywords not handled by reserved words
+  'implements',
+  'exports'
+];
 
 
 /**
@@ -99,7 +130,9 @@ const getUniqueVarName = (root, originalName, prefix) => {
  * @return {boolean} If the variable is declared in the file.
  */
 const hasVar = (root, varName) => {
-  return root.find(jscs.VariableDeclarator, {id: {name: varName}}).length > 0 ||
+  return reserved.check(varName, 'es2015') ||
+      DISALLOWED_VARS.indexOf(varName) > -1 ||
+      root.find(jscs.VariableDeclarator, {id: {name: varName}}).length > 0 ||
       root.find(jscs.ClassDeclaration, {id: {name: varName}}).length > 0 ||
       root.find(jscs.FunctionExpression, (node) => {
         return node.params.some((param) => param.name === varName);

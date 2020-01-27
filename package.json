@@ -27,6 +27,7 @@
     "colors": "^1.4.0",
     "get-value": "^3.0.1",
     "jscodeshift": "^0.7.0",
+    "reserved-words": "^0.1.2",
     "winston": "^3.2.1"
   },
   "jest": {
