@@ -342,6 +342,26 @@ const sortRequires = root => {
 
 
 /**
+ * Get the sort value for two goog.require/goog.requireType variable declarations.
+ * @param {Node} a The first node.
+ * @param {Node} b The second node.
+ * @return {number} The sort value. Sorts goog.require above goog.requireType, then by required namespace.
+ */
+const sortModuleRequires_ = (a, b) => {
+  const aIsRequire = a.declarations[0].init.callee.property.name === 'require';
+  const bIsRequire = b.declarations[0].init.callee.property.name === 'require';
+
+  if (aIsRequire === bIsRequire) {
+    const aNamespace = a.declarations[0].init.arguments[0];
+    const bNamespace = b.declarations[0].init.arguments[0];
+    return aNamespace > bNamespace ? -1 : aNamespace < bNamespace ? 1 : 0
+  }
+
+  return aIsRequire ? -1 : 1;
+};
+
+
+/**
  * Sort goog.require variable declarations.
  * @param {Node} root The root node.
  */
@@ -349,20 +369,7 @@ const sortModuleRequires = root => {
   const requires = root.find(jscs.VariableDeclaration,
       (node) => isGoogModuleRequire(node) || isGoogModuleRequireType(node));
   if (requires.length) {
-    const requireNodes = requires.nodes().slice();
-    requireNodes.sort((a, b) => {
-      const aIsRequire = a.declarations[0].init.callee.property.name === 'require';
-      const bIsRequire = b.declarations[0].init.callee.property.name === 'require';
-
-      if (aIsRequire === bIsRequire) {
-        const aNamespace = a.declarations[0].init.arguments[0];
-        const bNamespace = b.declarations[0].init.arguments[0];
-        return aNamespace > bNamespace ? -1 : aNamespace < bNamespace ? 1 : 0
-      }
-
-      return aIsRequire ? -1 : 1;
-    });
-
+    const requireNodes = requires.nodes().slice().sort(sortModuleRequires_);
     requires.forEach((path, idx, arr) => {
       jscs(path).replaceWith(requireNodes[idx]);
     });

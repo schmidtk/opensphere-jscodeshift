@@ -5,7 +5,8 @@ goog.require('os2');
 goog.require('notReferencedPleaseRemove');
 goog.require('os.ns.NotReferencedPleaseRemove');
 goog.require('os.ns.ParentClass');
-goog.require('os.ns.SomeType');
+goog.require('os.ns.SomeType1');
+goog.require('os.ns.SomeType2');
 
 
 /**
@@ -45,13 +46,13 @@ os.ns.MyClass = function(arg1, arg2, opt_arg3) {
 
   /**
    * Verify types are replaced in code & comments.
-   * @type {os.ns.SomeType}
+   * @type {os.ns.SomeType1}
    */
-  this.typeTest1 = new os.ns.SomeType();
+  this.typeTest1 = new os.ns.SomeType1();
 
   /**
    * Verify types are replaced in comments alone.
-   * @type {os.ns.SomeType}
+   * @type {os.ns.SomeType1}
    */
   this.typeTest2 = null;
 
@@ -60,6 +61,12 @@ os.ns.MyClass = function(arg1, arg2, opt_arg3) {
    * @type {os2.Thing}
    */
   this.typeTest3 = os1.getAThing();
+
+  /**
+   * Reference os1 in code (goog.require), os2 in comments (requireType).
+   * @type {os.ns.SomeType2}
+   */
+  this.typeTest4 = null;
 };
 goog.inherits(os.ns.MyClass, os.ns.ParentClass);
 os.implements(os.ns.MyClass, os.ns.ISomeInterface.ID);
