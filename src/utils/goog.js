@@ -1,6 +1,6 @@
 const jscs = require('jscodeshift');
 
-const {createFindMemberExprObject, getUniqueVarName, isCall, isInComment, replaceInComments} = require('./ast');
+const {createFindMemberExprObject, getUniqueVarName, isCall, isInComment, isReferenced, replaceInComments} = require('./ast');
 
 
 /**
@@ -104,7 +104,7 @@ const isGoogModule = node => {
 
 
 /**
- * If a node is a `goog.array.find` call.
+ * If a node is a `goog.require` variable assignment.
  * @param {Node} node The node.
  * @return {boolean}
  */
@@ -115,6 +115,24 @@ const isGoogModuleRequire = node => {
       init: {
         type: 'CallExpression',
         callee: createFindMemberExprObject('goog.require')
+      }
+    }]
+  });
+};
+
+
+/**
+ * If a node is a `goog.requireType` variable assignment.
+ * @param {Node} node The node.
+ * @return {boolean}
+ */
+const isGoogModuleRequireType = node => {
+  return node.type === 'VariableDeclaration' && jscs.match(node, {
+    declarations: [{
+      type: 'VariableDeclarator',
+      init: {
+        type: 'CallExpression',
+        callee: createFindMemberExprObject('goog.requireType')
       }
     }]
   });
@@ -263,7 +281,7 @@ const replaceLegacyRequire = (root, toReplace) => {
 
   let requireCall;
 
-  if (root.find(jscs.MemberExpression, createFindMemberExprObject(toReplace)).length) {
+  if (isReferenced(root, toReplace)) {
     // referenced in the file - use goog.require
     requireCall = 'require';
   } else if (isInComment(root, toReplace)) {
@@ -323,6 +341,35 @@ const sortRequires = root => {
 };
 
 
+/**
+ * Sort goog.require variable declarations.
+ * @param {Node} root The root node.
+ */
+const sortModuleRequires = root => {
+  const requires = root.find(jscs.VariableDeclaration,
+      (node) => isGoogModuleRequire(node) || isGoogModuleRequireType(node));
+  if (requires.length) {
+    const requireNodes = requires.nodes().slice();
+    requireNodes.sort((a, b) => {
+      const aIsRequire = a.declarations[0].init.callee.property.name === 'require';
+      const bIsRequire = b.declarations[0].init.callee.property.name === 'require';
+
+      if (aIsRequire === bIsRequire) {
+        const aNamespace = a.declarations[0].init.arguments[0];
+        const bNamespace = b.declarations[0].init.arguments[0];
+        return aNamespace > bNamespace ? -1 : aNamespace < bNamespace ? 1 : 0
+      }
+
+      return aIsRequire ? -1 : 1;
+    });
+
+    requires.forEach((path, idx, arr) => {
+      jscs(path).replaceWith(requireNodes[idx]);
+    });
+  }
+};
+
+
 module.exports = {
   addExports,
   addRequire,
@@ -332,6 +379,7 @@ module.exports = {
   isGoogProvide,
   isGoogRequire,
   isGoogModuleRequire,
+  isGoogModuleRequireType,
   isClosureClass,
   isControllerClass,
   isDirective,
@@ -339,5 +387,6 @@ module.exports = {
   isConst,
   isPrivate,
   replaceLegacyRequire,
-  sortRequires
+  sortRequires,
+  sortModuleRequires
 };

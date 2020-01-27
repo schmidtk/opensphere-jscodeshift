@@ -1,6 +1,6 @@
 const jscs = require('jscodeshift');
 const {createFindCallFn} = require('./ast');
-const googUtil = require('./goog');
+const {addRequire} = require('./goog');
 const {getDefaultSourceOptions} = require('./options');
 
 /**
@@ -86,7 +86,7 @@ const replaceFunction = (root, options) => {
       jscs(path).replaceWith(createCall(options.with, args));
 
       if (options.googRequire) {
-        googUtil.addRequire(root, options.googRequire);
+        addRequire(root, options.googRequire);
       }
     }
   });
@@ -100,15 +100,27 @@ const replaceFunction = (root, options) => {
 const printSource = (root) => {
   let output = root.toSource(getDefaultSourceOptions()).trim();
 
-  const lastRequire = output.lastIndexOf('goog.require');
+  const lastRequire = output.lastIndexOf('goog.require(\'');
+  const lastRequireType = output.lastIndexOf('goog.requireType(\'');
 
   // after the legacy namespace call, add one blank line if there are require statements, two blank lines if not
-  const linesAfterLegacyNs = lastRequire > -1 ? '\n\n' : '\n\n\n';
+  const linesAfterLegacyNs = lastRequire > -1 || lastRequireType > -1 ? '\n\n' : '\n\n\n';
   output = output.replace(/goog\.module\.declareLegacyNamespace\(\);[\n]*/, `goog.module.declareLegacyNamespace();${linesAfterLegacyNs}`);
 
   // add two blank lines between the last require and the rest of the content
   if (lastRequire > -1) {
     const nextNewline = output.indexOf('\n', lastRequire);
+    if (nextNewline > -1) {
+      const before = output.slice(0, nextNewline).trim();
+      const after = output.slice(nextNewline).trim();
+      const linesAfterLastRequire = lastRequireType > -1 ? '\n\n' : '\n\n\n';
+      output = `${before}${linesAfterLastRequire}${after}`;
+    }
+  }
+
+  // add two blank lines between the last require and the rest of the content
+  if (lastRequireType > -1) {
+    const nextNewline = output.indexOf('\n', lastRequireType);
     if (nextNewline > -1) {
       const before = output.slice(0, nextNewline).trim();
       const after = output.slice(nextNewline).trim();

@@ -133,6 +133,13 @@ const isInComment = (root, value) => {
 };
 
 
+const isReferenced = (root, moduleName) => {
+  return moduleName.indexOf('.') > -1 ?
+      root.find(jscs.MemberExpression, createFindMemberExprObject(moduleName)).length > 0 :
+      root.find(jscs.Identifier, {name: moduleName}).length > 0;
+};
+
+
 /**
  * Replace occurrences of a pattern in all comments.
  * @param {NodePath} root The root node path.
@@ -140,6 +147,10 @@ const isInComment = (root, value) => {
  * @param {string|Function} replacement The replacement string, or a function to produce the replacement.
  */
 const replaceInComments = (root, pattern, replacement) => {
+  if (pattern == replacement) {
+    return;
+  }
+
   root.find(jscs.Comment).forEach((path) => {
     const comment = path.value;
     if (comment.value && comment.value.indexOf(pattern) > -1) {
@@ -196,6 +207,7 @@ module.exports = {
   hasVar,
   isCall,
   isInComment,
+  isReferenced,
   replaceInComments,
   replaceFunctionExpressionWithArrow
 };

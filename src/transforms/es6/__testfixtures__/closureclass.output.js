@@ -1,8 +1,11 @@
 goog.module('os.ns.MyClass');
 goog.module.declareLegacyNamespace();
 
+const os1 = goog.require('os1');
 const ParentClass = goog.require('os.ns.ParentClass');
 const SomeType = goog.require('os.ns.SomeType');
+
+const os2 = goog.requireType('os2');
 
 
 /**
@@ -51,6 +54,12 @@ class MyClass extends ParentClass {
      * @type {SomeType}
      */
     this.typeTest2 = null;
+
+    /**
+     * Reference os1 in code (goog.require), os2 in comments (requireType).
+     * @type {os2.Thing}
+     */
+    this.typeTest3 = os1.getAThing();
   }
 
   /**

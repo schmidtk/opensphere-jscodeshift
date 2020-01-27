@@ -1,5 +1,9 @@
 goog.provide('os.ns.MyClass');
 
+goog.require('os1');
+goog.require('os2');
+goog.require('notReferencedPleaseRemove');
+goog.require('os.ns.NotReferencedPleaseRemove');
 goog.require('os.ns.ParentClass');
 goog.require('os.ns.SomeType');
 
@@ -50,6 +54,12 @@ os.ns.MyClass = function(arg1, arg2, opt_arg3) {
    * @type {os.ns.SomeType}
    */
   this.typeTest2 = null;
+
+  /**
+   * Reference os1 in code (goog.require), os2 in comments (requireType).
+   * @type {os2.Thing}
+   */
+  this.typeTest3 = os1.getAThing();
 };
 goog.inherits(os.ns.MyClass, os.ns.ParentClass);
 os.implements(os.ns.MyClass, os.ns.ISomeInterface.ID);
