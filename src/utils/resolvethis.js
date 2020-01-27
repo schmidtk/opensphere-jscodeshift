@@ -32,6 +32,12 @@ const PATTERNS = [
   },
   {
     type: jscs.CallExpression,
+    filter: {callee: createFindMemberExprObject('goog.async.nextTick')},
+    fnArgs: [0],
+    thisArg: 1
+  },
+  {
+    type: jscs.CallExpression,
     filter: {callee: createFindMemberExprObject('goog.array.map')},
     fnArgs: [1],
     thisArg: 2

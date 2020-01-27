@@ -1,14 +1,14 @@
 goog.module('os.ns.IMyInterface');
 goog.module.declareLegacyNamespace();
 
-goog.require('os.ns.IParentInterface1');
-goog.require('os.ns.IParentInterface2');
+const IParentInterface1 = goog.requireType('os.ns.IParentInterface1');
+const IParentInterface2 = goog.requireType('os.ns.IParentInterface2');
 
 
 /**
  * An interface.
- * @extends {os.ns.IParentInterface1}
- * @extends {os.ns.IParentInterface2}
+ * @extends {IParentInterface1}
+ * @extends {IParentInterface2}
  * @interface
  */
 class IMyInterface {

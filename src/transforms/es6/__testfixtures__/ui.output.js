@@ -1,8 +1,8 @@
 goog.module('os.ns.MyComponent');
 goog.module.declareLegacyNamespace();
 
-goog.require('os.ns.ParentCtrl');
-goog.require('os.ui.Module');
+const ParentCtrl = goog.require('os.ns.ParentCtrl');
+const Module = goog.require('os.ui.Module');
 
 
 /**
@@ -23,14 +23,14 @@ const directive = () => {
 /**
  * Add the directive to the module
  */
-os.ui.Module.directive('my-component', [directive]);
+Module.directive('my-component', [directive]);
 
 
 /**
  * Test controller.
  * @unrestricted
  */
-class Controller extends os.ns.ParentCtrl {
+class Controller extends ParentCtrl {
   /**
    * Constructor.
    * @param {!angular.Scope} $scope The Angular scope.

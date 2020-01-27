@@ -1,6 +1,6 @@
 const jscs = require('jscodeshift');
 
-const {createFindMemberExprObject, getUniqueVarName, isCall} = require('./ast');
+const {createFindMemberExprObject, getUniqueVarName, isCall, isInComment, replaceInComments} = require('./ast');
 
 
 /**
@@ -250,6 +250,7 @@ const addRequire = (root, toAdd) => {
  * Replace a legacy goog.require statement to use the module return value.
  * @param {Node} root The root node.
  * @param {string} toReplace The require to replace.
+ * @return {boolean} If the require statement was replaced.
  */
 const replaceLegacyRequire = (root, toReplace) => {
   // remove existing goog.require calls for the module
@@ -260,16 +261,24 @@ const replaceLegacyRequire = (root, toReplace) => {
     }
   }).remove();
 
-  // bail if the module isn't referenced in the file
-  if (!root.find(jscs.MemberExpression, createFindMemberExprObject(toReplace)).length) {
-    return;
+  let requireCall;
+
+  if (root.find(jscs.MemberExpression, createFindMemberExprObject(toReplace)).length) {
+    // referenced in the file - use goog.require
+    requireCall = 'require';
+  } else if (isInComment(root, toReplace)) {
+    // only referenced in comments - use goog.requireType
+    requireCall = 'requireType';
+  } else {
+    // bail if the module isn't referenced in the file
+    return false;
   }
 
   // create a variable name that doesn't shadow any local vars
   const varName = getUniqueVarName(root, toReplace);
 
   // create the variable declaration
-  const callee = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier('require'));
+  const callee = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier(requireCall));
   const call = jscs.callExpression(callee, [jscs.literal(toReplace)]);
   const varDeclarator = jscs.variableDeclarator(jscs.identifier(varName), call);
   const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
@@ -288,6 +297,11 @@ const replaceLegacyRequire = (root, toReplace) => {
   // replace references to the fully qualified class name with the local variable name
   root.find(jscs.MemberExpression, createFindMemberExprObject(toReplace))
       .forEach(path => jscs(path).replaceWith(jscs.identifier(varName)));
+
+  // replace references in comments
+  replaceInComments(root, toReplace, varName);
+
+  return true;
 };
 
 

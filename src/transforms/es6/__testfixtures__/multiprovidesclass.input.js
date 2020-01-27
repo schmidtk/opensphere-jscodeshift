@@ -2,8 +2,6 @@ goog.provide('os.ns.MY_CONSTANT');
 goog.provide('os.ns.MyClass');
 goog.provide('os.ns.MyEnum');
 
-goog.require('os.ns');
-
 
 /**
  * An enum provided by the file.

@@ -205,7 +205,7 @@ const convertPrototypeAssignment = (path, moduleName) => {
     // convert in place, replacing the module name with the class name (ClassName.prototype.propertyName = value)
     replaceFQClass(path.value.left.object, moduleName);
   } else {
-    logger.warn(`In ${moduleName}: Unable to convert prototype expression ${propertyName} of type ${valueType}.`);
+    logger.warn(`Unable to convert prototype expression ${propertyName} of type ${valueType}.`);
   }
 };
 
@@ -317,7 +317,7 @@ const replaceSuperclassWithSuper = (path, moduleName) => {
     const superCall = jscs.callExpression(superMember, superArgs);
     jscs(callExpr).replaceWith(superCall);
   } else {
-    logger.warn(`In ${moduleName}: Found superClass_ call to another class (${className}).`);
+    logger.warn(`Found superClass_ call to another class (${className}).`);
   }
 };
 

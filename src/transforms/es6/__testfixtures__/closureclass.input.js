@@ -1,6 +1,7 @@
 goog.provide('os.ns.MyClass');
 
 goog.require('os.ns.ParentClass');
+goog.require('os.ns.SomeType');
 
 
 /**
@@ -37,6 +38,18 @@ os.ns.MyClass = function(arg1, arg2, opt_arg3) {
    * @private
    */
   this.prop3_ = '!!!';
+
+  /**
+   * Verify types are replaced in code & comments.
+   * @type {os.ns.SomeType}
+   */
+  this.typeTest1 = new os.ns.SomeType();
+
+  /**
+   * Verify types are replaced in comments alone.
+   * @type {os.ns.SomeType}
+   */
+  this.typeTest2 = null;
 };
 goog.inherits(os.ns.MyClass, os.ns.ParentClass);
 os.implements(os.ns.MyClass, os.ns.ISomeInterface.ID);

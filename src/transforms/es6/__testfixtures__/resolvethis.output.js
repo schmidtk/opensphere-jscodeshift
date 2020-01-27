@@ -1,6 +1,7 @@
 goog.module('os.ns.MyClass');
 goog.module.declareLegacyNamespace();
 
+
 /**
  * Class description.
  */

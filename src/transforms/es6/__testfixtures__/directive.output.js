@@ -1,8 +1,8 @@
 goog.module('os.ns.myComponentDirective');
 goog.module.declareLegacyNamespace();
 
-goog.require('os.ns.MyComponentCtrl');
-goog.require('os.ui.Module');
+const MyComponentCtrl = goog.require('os.ns.MyComponentCtrl');
+const Module = goog.require('os.ui.Module');
 
 
 /**
@@ -14,7 +14,7 @@ const directive = () => {
     restrict: 'AE',
     replace: true,
     templateUrl: os.ROOT + 'views/mycomponent.html',
-    controller: os.ns.MyComponentCtrl,
+    controller: MyComponentCtrl,
     controllerAs: 'ctrl'
   };
 };
@@ -23,5 +23,5 @@ const directive = () => {
 /**
  * Add the directive to the module
  */
-os.ui.Module.directive('my-component', [directive]);
+Module.directive('my-component', [directive]);
 exports = directive;

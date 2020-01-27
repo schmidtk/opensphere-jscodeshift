@@ -1,16 +1,15 @@
 const jscs = require('jscodeshift');
 const {createFindMemberExprObject} = require('../../utils/ast');
-const {memberExpressionToString} = require('../../utils/jscs');
+const {memberExpressionToString, printSource} = require('../../utils/jscs');
 const {convertGoogDefine, convertNamespaceExpression, convertClass, convertDirective, convertInterface, replaceProvidesWithModules, replaceUIModules} = require('../../utils/classes');
-const {addRequire, isClosureClass, isControllerClass, isDirective, isGoogDefine, isInterface, replaceLegacyRequire} = require('../../utils/goog');
+const {addRequire, isClosureClass, isControllerClass, isDirective, isGoogDefine, isGoogRequire, isInterface, replaceLegacyRequire} = require('../../utils/goog');
 const {createAssignmentShim, createUIShim} = require('../../utils/shim');
-const {getDefaultSourceOptions} = require('../../utils/options');
-const {abbreviatePath, logger} = require('../../utils/logger');
+const {logger} = require('../../utils/logger');
 const {resolveThis} = require('../../utils/resolvethis');
 
 module.exports = (file, api, options) => {
   const root = jscs(file.source);
-  const logPath = abbreviatePath(file.path);
+  logger.setCurrentFile(file.path);
 
   const modules = replaceProvidesWithModules(root);
   const movedModules = [];
@@ -29,7 +28,7 @@ module.exports = (file, api, options) => {
         if (!directiveName) {
           directiveName = moduleName;
         } else {
-          logger.warn(`${logPath}: detected multiple directives in file.`);
+          logger.warn(`Detected multiple directives. Combine or separate into new files.`);
         }
 
         convertDirective(root, path, moduleName);
@@ -38,7 +37,7 @@ module.exports = (file, api, options) => {
           if (!controllerName) {
             controllerName = moduleName;
           } else {
-            logger.warn(`${logPath}: detected multiple controllers in file.`);
+            logger.warn(`Detected multiple controllers. Combine or separate into new files.`);
           }
         }
 
@@ -99,7 +98,7 @@ module.exports = (file, api, options) => {
   // resolve cases that might cause no-invalid-this eslint errors by using arrow functions instead of inline functions
   const replacedThisCount = resolveThis(root);
   if (replacedThisCount) {
-    logger.warn(`${logPath}: [no-invalid-this] converted ${replacedThisCount} inline functions to arrow functions.`);
+    logger.info(`[no-invalid-this] Converted ${replacedThisCount} inline function${replacedThisCount > 1 ? 's' : ''} to arrow functions.`);
   }
 
   // create a shim for backward compatibility if a controller and directive are in the same file
@@ -120,9 +119,28 @@ module.exports = (file, api, options) => {
     }
   });
 
-  if (moduleCount > 1) {
-    logger.warn(`${logPath}: detected ${moduleCount} modules in file.`);
+  // convert goog.require statements
+  //
+  // TODO: Replace statements in-place to avoid loss of whitespace
+  //
+  const requireStatements = root.find(jscs.ExpressionStatement, isGoogRequire);
+  const unusedRequires = [];
+  requireStatements.paths().reverse();
+  requireStatements.forEach(path => {
+    if (path.parent.value.type === 'Program') {
+      if (!replaceLegacyRequire(root, path.value.expression.arguments[0].value, true)) {
+        unusedRequires.push(path);
+      }
+    }
+  });
+
+  if (unusedRequires.length) {
+    logger.warn(`Removed ${unusedRequires.length} unused require statements.`);
   }
 
-  return root.toSource(getDefaultSourceOptions());
+  if (moduleCount > 1) {
+    logger.warn(`${moduleCount} modules remaining in file. Combine or separate into new files.`);
+  }
+
+  return printSource(root);
 };

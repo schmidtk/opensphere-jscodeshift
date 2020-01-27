@@ -60,7 +60,7 @@ const createAssignmentShim = (root, path, moduleName, basePath, writeFile) => {
     // generate a unique file name and write the file
     const fileName = getUniqueFileNameForModule(moduleName, basePath);
     const filePath = `${basePath}/${fileName}`;
-    logger.warn(`Creating new module: ${filePath}`);
+    logger.info(`Creating new module: ${filePath}`);
 
     const fileSource = jscs(program).toSource(getDefaultSourceOptions());
     fs.writeFileSync(filePath, `${fileSource}\n`, 'utf8');
@@ -115,7 +115,7 @@ const createUIShim = (uiPath, controllerName, directiveName) => {
   program.body.push(jscs.expressionStatement(dirAssignment));
   program.body.push(jscs.emptyStatement());
 
-  logger.warn(`Creating UI shim: ${shimPath}`);
+  logger.info(`Creating UI shim: ${shimPath}`);
 
   const shimSource = jscs(program).toSource(getDefaultSourceOptions());
   fs.writeFileSync(shimPath, `${shimSource}\n`, 'utf8');

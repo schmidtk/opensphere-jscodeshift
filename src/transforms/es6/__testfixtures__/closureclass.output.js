@@ -1,7 +1,8 @@
 goog.module('os.ns.MyClass');
 goog.module.declareLegacyNamespace();
 
-goog.require('os.ns.ParentClass');
+const ParentClass = goog.require('os.ns.ParentClass');
+const SomeType = goog.require('os.ns.SomeType');
 
 
 /**
@@ -9,7 +10,7 @@ goog.require('os.ns.ParentClass');
  *
  * Additional description.
  */
-class MyClass extends os.ns.ParentClass {
+class MyClass extends ParentClass {
   /**
    * Constructor.
    * @param {string} arg1 First arg.
@@ -38,6 +39,18 @@ class MyClass extends os.ns.ParentClass {
      * @private
      */
     this.prop3_ = '!!!';
+
+    /**
+     * Verify types are replaced in code & comments.
+     * @type {SomeType}
+     */
+    this.typeTest1 = new SomeType();
+
+    /**
+     * Verify types are replaced in comments alone.
+     * @type {SomeType}
+     */
+    this.typeTest2 = null;
   }
 
   /**

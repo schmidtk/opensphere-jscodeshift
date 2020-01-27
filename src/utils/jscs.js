@@ -1,6 +1,7 @@
 const jscs = require('jscodeshift');
 const {createFindCallFn} = require('./ast');
 const googUtil = require('./goog');
+const {getDefaultSourceOptions} = require('./options');
 
 /**
  * Bind a callback argument to a `this` argument.
@@ -91,10 +92,39 @@ const replaceFunction = (root, options) => {
   });
 };
 
+/**
+ * Print source code and fix whitespace issues with recast's printer.
+ * @param {Node} root The root node.
+ * @return {string} The printed source.
+ */
+const printSource = (root) => {
+  let output = root.toSource(getDefaultSourceOptions()).trim();
+
+  const lastRequire = output.lastIndexOf('goog.require');
+
+  // after the legacy namespace call, add one blank line if there are require statements, two blank lines if not
+  const linesAfterLegacyNs = lastRequire > -1 ? '\n\n' : '\n\n\n';
+  output = output.replace(/goog\.module\.declareLegacyNamespace\(\);[\n]*/, `goog.module.declareLegacyNamespace();${linesAfterLegacyNs}`);
+
+  // add two blank lines between the last require and the rest of the content
+  if (lastRequire > -1) {
+    const nextNewline = output.indexOf('\n', lastRequire);
+    if (nextNewline > -1) {
+      const before = output.slice(0, nextNewline).trim();
+      const after = output.slice(nextNewline).trim();
+      output = `${before}\n\n\n${after}`;
+    }
+  }
+
+  // add trailing newline
+  return `${output}\n`;
+};
+
 module.exports = {
   bindArgs,
   createCall,
   createMemberExpression,
   memberExpressionToString,
+  printSource,
   replaceFunction
 }

@@ -3,30 +3,6 @@ const camelcase = require('camelcase');
 
 
 /**
- * Native identifiers to avoid shadowing with a variable.
- * @type {!Array<string>}
- * @const
- */
-const NATIVE_IDENTIFIERS = [
-  // Types
-  'Array',
-  'Boolean',
-  'Function',
-  'Number',
-  'Object',
-  'String',
-
-  // null/undefined
-  'null',
-  'undefined',
-
-  // ES6 constructs
-  'Map',
-  'Set'
-];
-
-
-/**
  * Create a Node find function to locate a call expression by path (ie, `goog.array.find`).
  * @param {string} path The call function path.
  * @return {function(Node):boolean}
@@ -101,12 +77,12 @@ const getUniqueVarName = (root, originalName, prefix) => {
   // try the last part of the module name first
   let varName = `${prefix}${moduleParts[moduleParts.length - 1]}`;
 
-  // if that doesn't work, camelcase the parts
-  if (hasVar(root, varName)) {
+  // camelcase the parts
+  if (!varName || hasVar(root, varName)) {
     varName = getVarName(moduleParts, prefix);
   }
 
-  // if that still doesn't work, add a counter
+  // add a counter until a unique name is found
   let i = 1;
   while (hasVar(root, varName)) {
     varName = getVarName(moduleParts, prefix, i++);
@@ -123,8 +99,11 @@ const getUniqueVarName = (root, originalName, prefix) => {
  * @return {boolean} If the variable is declared in the file.
  */
 const hasVar = (root, varName) => {
-  return NATIVE_IDENTIFIERS.indexOf(varName) > -1 ||
-      root.find(jscs.VariableDeclarator, {id: {name: varName}}).length > 0;
+  return root.find(jscs.VariableDeclarator, {id: {name: varName}}).length > 0 ||
+      root.find(jscs.ClassDeclaration, {id: {name: varName}}).length > 0 ||
+      root.find(jscs.FunctionExpression, (node) => {
+        return node.params.some((param) => param.name === varName);
+      }).length > 0;
 };
 
 
@@ -137,6 +116,51 @@ const hasVar = (root, varName) => {
 const isCall = (node, fn) => {
   return node.type === 'CallExpression' && jscs.match(node, {
     callee: createFindMemberExprObject(fn)
+  });
+};
+
+
+/**
+ * Check if a string exists in a comment.
+ * @param {Node} root The root node.
+ * @param {string} value The value to find.
+ * @return {boolean} If the value was found in a comment.
+ */
+const isInComment = (root, value) => {
+  return !!value && root.find(jscs.Comment).some((path) => {
+    return path.value.type === 'CommentBlock' && path.value.value.indexOf(value) > -1;
+  });
+};
+
+
+/**
+ * Replace occurrences of a pattern in all comments.
+ * @param {NodePath} root The root node path.
+ * @param {string|RegExp} pattern The string or regular expression to match.
+ * @param {string|Function} replacement The replacement string, or a function to produce the replacement.
+ */
+const replaceInComments = (root, pattern, replacement) => {
+  root.find(jscs.Comment).forEach((path) => {
+    const comment = path.value;
+    if (comment.value && comment.value.indexOf(pattern) > -1) {
+      let newComment = comment.value.replace(pattern, replacement);
+      if (comment.type === 'CommentBlock') {
+        //
+        // if the comment specifies an indent level, replace that in the new comment or the indentation will be
+        // incorrect when printed.
+        //
+        // https://github.com/benjamn/recast/issues/297
+        //
+        if (comment.loc && comment.loc.indent > 0) {
+          const pattern = new RegExp(`^[\t ]{${comment.loc.indent}}`, 'gm');
+          newComment = newComment.replace(pattern, '');
+        }
+
+        jscs(path).replaceWith(jscs.commentBlock(newComment));
+      } else if (comment.type === 'CommentLine') {
+        jscs(path).replaceWith(jscs.commentLine(newComment));
+      }
+    }
   });
 };
 
@@ -171,5 +195,7 @@ module.exports = {
   getUniqueVarName,
   hasVar,
   isCall,
+  isInComment,
+  replaceInComments,
   replaceFunctionExpressionWithArrow
 };

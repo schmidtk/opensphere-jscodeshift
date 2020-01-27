@@ -1,14 +1,14 @@
 goog.module('os.ns.MyComponentCtrl');
 goog.module.declareLegacyNamespace();
 
-goog.require('os.ns.ParentCtrl');
+const ParentCtrl = goog.require('os.ns.ParentCtrl');
 
 
 /**
  * Test controller.
  * @unrestricted
  */
-class Controller extends os.ns.ParentCtrl {
+class Controller extends ParentCtrl {
   /**
    * Constructor.
    * @param {!angular.Scope} $scope The Angular scope.
