@@ -4,7 +4,7 @@ const {createFindCallFn, createFindMemberExprObject, getUniqueVarName} = require
 const {getClassNode, registerClassNode} = require('./classregistry');
 const {addExports, isConst, isPrivate, isControllerClass} = require('./goog');
 const {createCall, createMemberExpression, memberExpressionToString} = require('./jscs');
-const {logger} = require('./logger');
+const {logWithNode} = require('./logger');
 
 /**
  * Match comments that should be put in the constructor function.
@@ -205,7 +205,7 @@ const convertPrototypeAssignment = (path, moduleName) => {
     // convert in place, replacing the module name with the class name (ClassName.prototype.propertyName = value)
     replaceFQClass(path.value.left.object, moduleName);
   } else {
-    logger.warn(`Unable to convert prototype expression ${propertyName} of type ${valueType}.`);
+    logWithNode('warn', `Unable to convert prototype expression ${propertyName} of type ${valueType}.`, path.value);
   }
 };
 
@@ -317,7 +317,7 @@ const replaceSuperclassWithSuper = (path, moduleName) => {
     const superCall = jscs.callExpression(superMember, superArgs);
     jscs(callExpr).replaceWith(superCall);
   } else {
-    logger.warn(`Found superClass_ call to another class (${className}).`);
+    logWithNode('warn', `Found superClass_ call to another class (${className}).`, path.value);
   }
 };
 
