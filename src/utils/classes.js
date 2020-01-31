@@ -366,7 +366,7 @@ const replaceProvidesWithModules = (root) => {
  * @param {string} directiveName The directive name.
  */
 const replaceUIModules = (root, controllerName, directiveName) => {
-  const moduleName = controllerName.replace(/Ctrl$/, '');
+  const moduleName = controllerName.replace(/Ctrl$/, 'UI');
   const findFn = createFindCallFn('goog.module');
   root.find(jscs.CallExpression, findFn).forEach((path, idx, paths) => {
     const args = path.value.arguments;

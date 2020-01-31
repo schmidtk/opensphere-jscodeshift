@@ -91,7 +91,7 @@ const createUIShim = (uiPath, controllerName, directiveName) => {
     return;
   }
 
-  const moduleName = controllerName.replace(/Ctrl$/, '');
+  const moduleName = controllerName.replace(/Ctrl$/, 'UI');
   const program = jscs.program([]);
   program.body.push(jscs.expressionStatement(createCall('goog.provide', [jscs.literal(controllerName)])));
   program.body.push(jscs.expressionStatement(createCall('goog.provide', [jscs.literal(directiveName)])));

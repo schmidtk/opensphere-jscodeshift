@@ -1,4 +1,4 @@
-goog.module('os.ns.MyComponent');
+goog.module('os.ns.MyComponentUI');
 goog.module.declareLegacyNamespace();
 
 const ParentCtrl = goog.require('os.ns.ParentCtrl');
