@@ -16,3 +16,4 @@ defineTest(__dirname, 'providetomodule', options, 'requirevars');
 defineTest(__dirname, 'providetomodule', options, 'resolvethis');
 defineTest(__dirname, 'providetomodule', options, 'singlenamespace');
 defineTest(__dirname, 'providetomodule', options, 'ui');
+defineTest(__dirname, 'providetomodule', options, 'uiextends');

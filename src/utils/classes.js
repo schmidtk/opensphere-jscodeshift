@@ -385,7 +385,21 @@ const replaceUIModules = (root, controllerName, directiveName) => {
  * @param {string} moduleName The Closure module name.
  */
 const convertDirective = (root, path, moduleName) => {
-  const directiveFn = jscs.arrowFunctionExpression([], path.value.right.body, false);
+  const directiveBody = path.value.right.body;
+
+  let arrowBody;
+  let expression;
+  if (directiveBody.body.length === 1 && directiveBody.body[0].type === 'ReturnStatement') {
+    // return the directive object as a concise body
+    arrowBody = directiveBody.body[0].argument;
+    expression = false;
+  } else {
+    // use the original function body as a block body
+    arrowBody = directiveBody;
+    expression = true;
+  }
+
+  const directiveFn = jscs.arrowFunctionExpression([], arrowBody, expression);
   const varDeclarator = jscs.variableDeclarator(jscs.identifier(DIRECTIVE_NAME), directiveFn);
   const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
   varDeclaration.comments = [jscs.commentBlock(path.parent.value.comments.pop().value)];

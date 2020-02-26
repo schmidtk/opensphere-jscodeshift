@@ -9,15 +9,13 @@ const Module = goog.require('os.ui.Module');
  * Test directive.
  * @return {angular.Directive}
  */
-const directive = () => {
-  return {
-    restrict: 'AE',
-    replace: true,
-    templateUrl: os.ROOT + 'views/mycomponent.html',
-    controller: MyComponentCtrl,
-    controllerAs: 'ctrl'
-  };
-};
+const directive = () => ({
+  restrict: 'AE',
+  replace: true,
+  templateUrl: os.ROOT + 'views/mycomponent.html',
+  controller: MyComponentCtrl,
+  controllerAs: 'ctrl'
+});
 
 
 /**

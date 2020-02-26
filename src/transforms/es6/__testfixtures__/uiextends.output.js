@@ -2,20 +2,19 @@ goog.module('os.ns.MyComponentUI');
 goog.module.declareLegacyNamespace();
 
 const ParentCtrl = goog.require('os.ns.ParentCtrl');
+const myParentDirective = goog.require('os.ns.myParentDirective');
 const Module = goog.require('os.ui.Module');
 
 
 /**
- * Test directive.
+ * Test directive extending another.
  * @return {angular.Directive}
  */
-const directive = () => ({
-  restrict: 'AE',
-  replace: true,
-  templateUrl: os.ROOT + 'views/mycomponent.html',
-  controller: Controller,
-  controllerAs: 'ctrl'
-});
+const directive = () => {
+  var directive = myParentDirective();
+  directive.controller = Controller;
+  return directive;
+};
 
 
 /**
