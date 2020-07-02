@@ -249,7 +249,8 @@ const addRequire = (root, toAdd) => {
     const programBody = program.value.body;
     for (let i = 0; i < programBody.length; i++) {
       const current = programBody[i];
-      if (!isGoogModule(current) && !isGoogDeclareLegacyNamespace(current) && !isGoogProvide(current)) {
+      if (!isGoogModule(current) && !isGoogDeclareLegacyNamespace(current) && !isGoogProvide(current) &&
+          !isGoogModuleRequire(current) && !isGoogModuleRequireType(current)) {
         const insertIndex = isGoogRequire(current) ? i + 1 : i;
         const callee = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier('require'));
         const call = jscs.callExpression(callee, [jscs.literal(toAdd)]);
@@ -268,7 +269,7 @@ const addRequire = (root, toAdd) => {
  * Replace a legacy goog.require statement to use the module return value.
  * @param {Node} root The root node.
  * @param {string} toReplace The require to replace.
- * @return {boolean} If the require statement was replaced.
+ * @return {?string} The legacy require namespace, or null if replaced.
  */
 const replaceLegacyRequire = (root, toReplace) => {
   // remove existing goog.require calls for the module
@@ -289,7 +290,7 @@ const replaceLegacyRequire = (root, toReplace) => {
     requireCall = 'requireType';
   } else {
     // bail if the module isn't referenced in the file
-    return false;
+    return toReplace;
   }
 
   // create a variable name that doesn't shadow any local vars
@@ -319,7 +320,7 @@ const replaceLegacyRequire = (root, toReplace) => {
   // replace references in comments
   replaceInComments(root, toReplace, varName);
 
-  return true;
+  return null;
 };
 
 

@@ -128,14 +128,21 @@ module.exports = (file, api, options) => {
   requireStatements.paths().reverse();
   requireStatements.forEach(path => {
     if (path.parent.value.type === 'Program') {
-      if (!replaceLegacyRequire(root, path.value.expression.arguments[0].value, true)) {
-        unusedRequires.push(path);
+      const unusedRequire = replaceLegacyRequire(root, path.value.expression.arguments[0].value, true);
+      if (unusedRequire) {
+        unusedRequires.push(unusedRequire);
       }
     }
   });
 
   if (unusedRequires.length) {
-    logger.warn(`Removed ${unusedRequires.length} unused require statements.`);
+    // Add the legacy goog.require statement back. This may be a directive used by the template, implicit require,
+    // etc that should be manually updated by a developer.
+    unusedRequires.forEach((req) => {
+      addRequire(root, req);
+    });
+
+    logger.warn(`Found ${unusedRequires.length} legacy require statements that need verification.`);
   }
 
   if (moduleCount > 1) {
