@@ -3,7 +3,7 @@ const jscs = require('jscodeshift');
 const {createFindCallFn, createFindMemberExprObject, getUniqueVarName} = require('./ast');
 const {getClassNode, registerClassNode} = require('./classregistry');
 const {addExports, isConst, isPrivate, isControllerClass} = require('./goog');
-const {createCall, createMemberExpression, memberExpressionToString} = require('./jscs');
+const {createCall, memberExpressionToString} = require('./jscs');
 const {logWithNode} = require('./logger');
 
 /**
@@ -471,13 +471,21 @@ const convertGoogDefine = (root, path, modules) => {
   const defineNs = defineParts.join('.');
 
   if (modules.indexOf(defineNs) > -1) {
-    // assign the define to "exports.<name>" and replace references in the file
-    const exportsMemberExpr = createMemberExpression(`exports.${defineName}`);
-    path.value.expression = jscs.assignmentExpression('=', exportsMemberExpr, path.value.expression);
+    // assign the define to "const <name> = <define>" and replace references in the file
+    const defineIdentifier = jscs.identifier(defineName);
+    const varDeclarator = jscs.variableDeclarator(defineIdentifier, path.value.expression || null);
+    const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
+
+    // add the original comments and replace the node
+    varDeclaration.comments = path.value.comments;
+    jscs(path).replaceWith(varDeclaration);
 
     // replace references to the define with the exported value
     root.find(jscs.MemberExpression, createFindMemberExprObject(fullDefine))
-        .forEach(path => jscs(path).replaceWith(exportsMemberExpr));
+        .forEach(path => jscs(path).replaceWith(defineIdentifier));
+
+    // export the var
+    addExports(root, [defineName]);
   } else {
     const localRefs = fullDefine.indexOf('.') > -1 ?
         // dot-delimited, find member expression
@@ -508,32 +516,27 @@ const convertNamespaceExpression = (root, path, moduleName) => {
   const isAssignment = expression.type === 'AssignmentExpression';
   const propName = isAssignment ? expression.left.property.name :
       path.value.expression.property.name;
+  const isPrivateExpr = isPrivate(path.value);
 
-  if (isPrivate(path.value)) {
-    const kind = isAssignment && !isReassigned(root, moduleName, propName) ? 'const' : 'let';
-    const varDeclarator = jscs.variableDeclarator(jscs.identifier(propName), expression.right || null);
-    const varDeclaration = jscs.variableDeclaration(kind, [varDeclarator]);
-    const newComment = path.value.comments.pop().value.replace('\n * @private', '');
-    varDeclaration.comments = [jscs.commentBlock(newComment)];
+  const kind = isAssignment && !isReassigned(root, moduleName, propName) ? 'const' : 'let';
+  const varDeclarator = jscs.variableDeclarator(jscs.identifier(propName), expression.right || null);
+  const varDeclaration = jscs.variableDeclaration(kind, [varDeclarator]);
 
-    jscs(path).replaceWith(varDeclaration);
+  // these annotations are assumed within a module
+  const newComment = path.value.comments.pop().value
+    .replace('\n * @const', '')
+    .replace('\n * @private', '');
 
-    // replace references to the fully qualified class name with the local class reference
-    root.find(jscs.MemberExpression, createFindMemberExprObject(`${moduleName}.${propName}`))
-        .forEach(path => jscs(path).replaceWith(jscs.identifier(propName)));
-  } else {
-    // replace the left side of the assignment with an export
-    const memberExpr = createMemberExpression(`exports.${propName}`);
+  varDeclaration.comments = [jscs.commentBlock(newComment)];
 
-    if (isAssignment) {
-      expression.left = memberExpr;
-    } else {
-      expression.object = jscs.identifier('exports');
-    }
+  jscs(path).replaceWith(varDeclaration);
 
-    // replace references to the fully qualified class name with the local class reference
-    root.find(jscs.MemberExpression, createFindMemberExprObject(`${moduleName}.${propName}`))
-        .forEach(path => jscs(path).replaceWith(memberExpr));
+  // replace references to the fully qualified class name with the local class reference
+  root.find(jscs.MemberExpression, createFindMemberExprObject(`${moduleName}.${propName}`))
+      .forEach(path => jscs(path).replaceWith(jscs.identifier(propName)));
+
+  if (!isPrivateExpr) {
+    addExports(root, [propName]);
   }
 };
 

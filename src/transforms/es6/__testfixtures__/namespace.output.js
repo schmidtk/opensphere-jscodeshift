@@ -10,33 +10,28 @@ goog.module.declareLegacyNamespace();
  * An enum on the namespace.
  * @enum {string}
  */
-exports.MyEnum = {
+const MyEnum = {
   KEY1: 'value1',
   KEY2: 'value2'
 };
 
-
 /**
  * A constant property on the namespace.
  * @type {string}
- * @const
  */
-exports.CONSTANT_PROPERTY = 'Hello, World!';
-
+const CONSTANT_PROPERTY = 'Hello, World!';
 
 /**
  * An assigned public mutable property on the namespace.
  * @type {boolean}
  */
-exports.mutableProperty = false;
-
+const mutableProperty = false;
 
 /**
  * An unassigned public mutable property on the namespace.
  * @type {Object|undefined}
  */
-exports.unsetMutableProperty;
-
+let unsetMutableProperty;
 
 /**
  * An assigned private property on the namespace.
@@ -50,14 +45,13 @@ const privateProperty_ = true;
  */
 let unsetPrivateProperty_;
 
-
 /**
  * Function on the namespace that references other namespace properties.
  * @param {string} arg1 An argument.
  * @param {boolean=} opt_arg2 Another argument.
  * @return {boolean} The return value.
  */
-exports.someFn = function(arg1, opt_arg2) {
+const someFn = function(arg1, opt_arg2) {
   if (privateProperty_) {
     if (!unsetPrivateProperty_) {
       unsetPrivateProperty_ = {};
@@ -68,5 +62,13 @@ exports.someFn = function(arg1, opt_arg2) {
     }
   }
 
-  return opt_arg2 != null ? opt_arg2 : exports.mutableProperty;
+  return opt_arg2 != null ? opt_arg2 : mutableProperty;
+};
+
+exports = {
+  MyEnum,
+  CONSTANT_PROPERTY,
+  mutableProperty,
+  someFn,
+  unsetMutableProperty
 };
