@@ -1,6 +1,7 @@
 goog.module('os.ns.MyComponentCtrl');
 goog.module.declareLegacyNamespace();
 
+const alertManager = goog.require('os.alert.AlertManager');
 const ParentCtrl = goog.require('os.ns.ParentCtrl');
 
 
@@ -73,7 +74,7 @@ class Controller extends ParentCtrl {
    * @private
    */
   destroy_() {
-    os.alertManager.unlisten(os.alert.EventType.ALERT, this.registerAlert_, false, this);
+    alertManager.getInstance().unlisten(os.alert.EventType.ALERT, this.registerAlert_, false, this);
     this.scope_ = null;
   }
 

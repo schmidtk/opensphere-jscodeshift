@@ -268,10 +268,12 @@ const addRequire = (root, toAdd) => {
 /**
  * Replace a legacy goog.require statement to use the module return value.
  * @param {Node} root The root node.
- * @param {string} toReplace The require to replace.
+ * @param {string} toReplace The str to replace.
+ * @param {?string} toReplaceAlt The str to require.
+ * @param {?boolean} singleton if true, include getInstance() in call
  * @return {?string} The legacy require namespace, or null if replaced.
  */
-const replaceLegacyRequire = (root, toReplace) => {
+const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton) => {
   // remove existing goog.require calls for the module
   root.find(jscs.ExpressionStatement, {
     expression: {
@@ -294,11 +296,11 @@ const replaceLegacyRequire = (root, toReplace) => {
   }
 
   // create a variable name that doesn't shadow any local vars
-  const varName = getUniqueVarName(root, toReplace);
+  let varName = getUniqueVarName(root, toReplace);
 
   // create the variable declaration
   const callee = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier(requireCall));
-  const call = jscs.callExpression(callee, [jscs.literal(toReplace)]);
+  const call = jscs.callExpression(callee, [jscs.literal(toReplaceAlt || toReplace)]);
   const varDeclarator = jscs.variableDeclarator(jscs.identifier(varName), call);
   const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
 
@@ -312,6 +314,9 @@ const replaceLegacyRequire = (root, toReplace) => {
       break;
     }
   }
+
+  // add .getInstance() if needed for the in-line replacements
+  if (singleton === true) varName = `${varName}.getInstance()`;
 
   // replace references to the fully qualified class name with the local variable name
   root.find(jscs.MemberExpression, createFindMemberExprObject(toReplace))
