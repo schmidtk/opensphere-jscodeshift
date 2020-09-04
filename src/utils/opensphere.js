@@ -3,13 +3,37 @@ const jscsUtils = require('./jscs');
 
 const {replaceLegacyRequire} = require('./goog');
 
+
+/**
+ * require -- the module/provide that should be in the goog.require(). null/undefined uses the string key
+ * singleton -- true to append .getInstance() to uses of the const. null/undefined is the same as false
+ * 
+ * @typedef {{
+ *   require: (string|null|undefined),
+ *   singleton: (boolean|null|undefined)
+ * }}
+ */
+let OSGlobalTransformConfig;
+
+/**
+ * @type {Object<String, OSGlobalTransformConfig>}
+ */
 const osGlobals_ = {
   'os.alertManager': {'require': 'os.alert.AlertManager', 'singleton': true},
-  'os.feature': {'singleton': false},
-  'os.geo': {'singleton': false},
-  'os.ui': {'singleton': false},
+  'os.feature': {},
+  'os.geo': {},
+  'os.ui': {},
   'os.settings': {'require': 'os.config.Settings', 'singleton': true},
-  'os.MapContainer': {'singleton': false}
+  'os.MapContainer': {}
+};
+
+/**
+ * Utility function to update/append globals from command-line configs
+ * 
+ * @param {Object<String, OSGlobalTransformConfig>} globals 
+ */
+const addOSGlobals = (globals) => {
+  Object.assign(osGlobals_, globals);
 };
 
 /**
@@ -36,11 +60,13 @@ const convertOSGlobal = (root, path, modules) => {
   const config = osGlobals_[key];
 
   if (config) {
-    replaceLegacyRequire(root, key, config.require, config.singleton);
+    replaceLegacyRequire(root, key, config.require, (config.singleton === true));
   }
 };
 
 module.exports = {
+  addOSGlobals,
   isOSGlobal,
-  convertOSGlobal
+  convertOSGlobal,
+  OSGlobalTransformConfig
 };
