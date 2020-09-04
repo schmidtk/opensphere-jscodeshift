@@ -18,14 +18,7 @@ let OSGlobalTransformConfig;
 /**
  * @type {Object<String, OSGlobalTransformConfig>}
  */
-const osGlobals_ = {
-  'os.alertManager': {'require': 'os.alert.AlertManager', 'singleton': true},
-  'os.feature': {},
-  'os.geo': {},
-  'os.ui': {},
-  'os.settings': {'require': 'os.config.Settings', 'singleton': true},
-  'os.MapContainer': {}
-};
+const osGlobals_ = {};
 
 /**
  * Utility function to update/append globals from command-line configs

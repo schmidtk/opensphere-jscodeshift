@@ -39,9 +39,6 @@ const i = function(x, y, z) {
   // usually implicit require, sometimes require'd properly (require'd here)
   MapContainer.getInstance().doSomething();
 
-  // read from configs file (WARNING: NOT ASSUMED TO BE CONFIGURED IN THE TEST)
-  bits.coreui.doSomething();
-
   // don't replace
   path.to.nothing();
 

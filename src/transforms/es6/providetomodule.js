@@ -8,26 +8,20 @@ const {logger} = require('../../utils/logger');
 const {resolveThis} = require('../../utils/resolvethis');
 const {addOSGlobals, isOSGlobal, convertOSGlobal} = require('../../utils/opensphere');
 
-const fs = require('fs');
 
-
-// on creation, read "jscodeshift.json" file(s) from *-config* folder(s)
-(function(fs, workspace){
-  fs.readdir(workspace, function(err, files) {
-    files.forEach((folder) => {
-      if (folder.indexOf('-config') > 0) {
-        try {
-          const config = JSON.parse(fs.readFileSync(workspace + folder + '/jscodeshift.json', 'utf8'));
-          if (config) {
-            addOSGlobals(config['osGlobals']);
-          }
-        } catch (e) {
-          // no file found or couldn't read it
-        }
+// on creation, read ".jscodeshift.json" file(s) from this and local folders
+(function(fs, workspace, filename){
+  fs.readdirSync(workspace).forEach((folder) => {
+    try {
+      const config = JSON.parse(fs.readFileSync(`${workspace}${folder}/${filename}`, 'utf8'));
+      if (config) {
+        addOSGlobals(config['globals']);
       }
-    });
-  });  
-})(fs, '../');
+    } catch (e) {
+      // no file found or couldn't read it
+    }
+  });
+})(require('fs'), '../', '.jscodeshift.json');
 
 module.exports = (file, api, options) => {
   const root = jscs(file.source);
