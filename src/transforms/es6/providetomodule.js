@@ -10,8 +10,10 @@ const {resolveThis} = require('../../utils/resolvethis');
 const {addOSGlobals, isOSGlobal, convertOSGlobal} = require('../../utils/opensphere');
 
 
-// on creation, read ".jscodeshift.json" file(s) from this and local folders
-(function(fs, workspace, filename){
+// on creation, read ".jscodeshift.json" file(s) from this folder and sibling folders
+(function(){
+  const workspace = '../'; // relative from the npm run -- not this file
+  const filename = '.jscodeshift.json';
   fs.readdirSync(workspace).forEach((folder) => {
     const filepath = `${workspace}${folder}/${filename}`;
     if (fs.existsSync(filepath)) {
@@ -21,7 +23,7 @@ const {addOSGlobals, isOSGlobal, convertOSGlobal} = require('../../utils/opensph
       }
     }
   });
-})(fs, '../', '.jscodeshift.json');
+})();
 
 module.exports = (file, api, options) => {
   const root = jscs(file.source);
