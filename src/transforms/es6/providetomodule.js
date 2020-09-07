@@ -1,3 +1,4 @@
+const fs = require('fs');
 const jscs = require('jscodeshift');
 const {createFindMemberExprObject} = require('../../utils/ast');
 const {memberExpressionToString, printSource} = require('../../utils/jscs');
@@ -12,16 +13,15 @@ const {addOSGlobals, isOSGlobal, convertOSGlobal} = require('../../utils/opensph
 // on creation, read ".jscodeshift.json" file(s) from this and local folders
 (function(fs, workspace, filename){
   fs.readdirSync(workspace).forEach((folder) => {
-    try {
-      const config = JSON.parse(fs.readFileSync(`${workspace}${folder}/${filename}`, 'utf8'));
+    const filepath = `${workspace}${folder}/${filename}`;
+    if (fs.existsSync(filepath)) {
+      const config = JSON.parse(fs.readFileSync(filepath, 'utf8'));
       if (config) {
         addOSGlobals(config['globals']);
       }
-    } catch (e) {
-      // no file found or couldn't read it
     }
   });
-})(require('fs'), '../', '.jscodeshift.json');
+})(fs, '../', '.jscodeshift.json');
 
 module.exports = (file, api, options) => {
   const root = jscs(file.source);

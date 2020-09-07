@@ -2,7 +2,6 @@ const jscs = require('jscodeshift');
 
 const {createFindMemberExprObject, getUniqueVarName, isCall, isInComment, isReferenced, replaceInComments} = require('./ast');
 
-
 /**
  * Regular expression to detect @const JSDoc annotation.
  * @type {RegExp}
@@ -296,7 +295,7 @@ const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton) => {
   }
 
   // create a variable name that doesn't shadow any local vars
-  let varName = getUniqueVarName(root, toReplace);
+  const varName = getUniqueVarName(root, toReplace);
 
   // create the variable declaration
   const callee = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier(requireCall));
@@ -315,12 +314,17 @@ const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton) => {
     }
   }
 
+  let replaceWith = jscs.identifier(varName);
+
   // add .getInstance() if needed for the in-line replacements
-  if (singleton === true) varName = `${varName}.getInstance()`;
+  if (singleton === true) { 
+    replaceWith = jscs.memberExpression(replaceWith, jscs.identifier('getInstance'));
+    replaceWith = jscs.callExpression(replaceWith, []);
+  }
 
   // replace references to the fully qualified class name with the local variable name
   root.find(jscs.MemberExpression, createFindMemberExprObject(toReplace))
-      .forEach(path => jscs(path).replaceWith(jscs.identifier(varName)));
+      .forEach(path => jscs(path).replaceWith(replaceWith));
 
   // replace references in comments
   replaceInComments(root, toReplace, varName);
