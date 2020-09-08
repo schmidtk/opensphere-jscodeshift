@@ -2,7 +2,8 @@ goog.provide('my.transform.clazz');
 
 goog.require('os.ui.MyClass');
 goog.require('os.MapContainer');
-
+goog.require('os.alert.AlertManager'); // no duplicates
+goog.require('os.alertManager'); // no duplicates
 
 /**
  * @type {string}
@@ -34,6 +35,9 @@ my.transform.clazz.i = function(x, y, z) {
 
   // usually implicit require, sometimes require'd properly (require'd here)
   os.MapContainer.getInstance().doSomething();
+
+  // usually implicit require, but require'd anyway and needs the implicit conversion instead
+  os.alertManager.warning('WARNING');
 
   // don't replace
   path.to.nothing();

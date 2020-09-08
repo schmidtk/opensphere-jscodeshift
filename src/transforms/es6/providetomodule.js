@@ -7,7 +7,7 @@ const {addRequire, isClosureClass, isControllerClass, isDirective, isGoogDefine,
 const {createAssignmentShim, createUIShim} = require('../../utils/shim');
 const {logger} = require('../../utils/logger');
 const {resolveThis} = require('../../utils/resolvethis');
-const {addOSGlobals, isOSGlobal, convertOSGlobal} = require('../../utils/opensphere');
+const {addOSGlobals, isOSGlobal, isOSGlobalKey, convertOSGlobal} = require('../../utils/opensphere');
 
 
 // on creation, read ".jscodeshift.json" file(s) from this folder and sibling folders
@@ -145,7 +145,7 @@ module.exports = (file, api, options) => {
   const unusedRequires = [];
   requireStatements.paths().reverse();
   requireStatements.forEach(path => {
-    if (path.parent.value.type === 'Program') {
+    if (path.parent.value.type === 'Program' && !isOSGlobalKey(path.value.expression.arguments[0].value)) {
       const unusedRequire = replaceLegacyRequire(root, path.value.expression.arguments[0].value);
       if (unusedRequire) {
         unusedRequires.push(unusedRequire);

@@ -2,11 +2,11 @@ goog.module('my.transform.clazz');
 goog.module.declareLegacyNamespace();
 
 const alertManager = goog.require('os.alert.AlertManager');
+const MapContainer = goog.require('os.MapContainer');
 const feature = goog.require('os.feature');
 const settings = goog.require('os.config.Settings');
 const ui = goog.require('os.ui');
 const MyClass = goog.require('os.ui.MyClass');
-const MapContainer = goog.require('os.MapContainer');
 
 
 /**
@@ -38,6 +38,9 @@ const i = function(x, y, z) {
 
   // usually implicit require, sometimes require'd properly (require'd here)
   MapContainer.getInstance().doSomething();
+
+  // usually implicit require, but require'd anyway and needs the implicit conversion instead
+  alertManager.getInstance().warning('WARNING');
 
   // don't replace
   path.to.nothing();

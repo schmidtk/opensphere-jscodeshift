@@ -35,8 +35,16 @@ const addOSGlobals = (globals) => {
  */
 const isOSGlobal = (node) => {
   const isExpression = (node.type === jscs.MemberExpression.name);
-  const b = (isExpression && !!osGlobals_[jscsUtils.memberExpressionToString(node)]);
+  const b = (isExpression && isOSGlobalKey(jscsUtils.memberExpressionToString(node)));
   return b;
+};
+
+/**
+ * @param {string} key The expression string.
+ * @return {boolean}
+ */
+const isOSGlobalKey = (key) => {
+  return (!!osGlobals_[key]);
 };
 
 /**
@@ -60,6 +68,7 @@ const convertOSGlobal = (root, path, modules) => {
 module.exports = {
   addOSGlobals,
   isOSGlobal,
+  isOSGlobalKey,
   convertOSGlobal,
   OSGlobalTransformConfig
 };

@@ -274,12 +274,18 @@ const addRequire = (root, toAdd) => {
  */
 const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton) => {
   // remove existing goog.require calls for the module
-  root.find(jscs.ExpressionStatement, {
+  const expr = {
     expression: {
       callee: createFindMemberExprObject('goog.require'),
       arguments: [{value: toReplace}]
     }
-  }).remove();
+  };
+  root.find(jscs.ExpressionStatement, expr).remove();
+
+  if (toReplaceAlt) {
+    expr.expression.arguments = [{value: toReplaceAlt}];
+    root.find(jscs.ExpressionStatement, expr).remove();  
+  }
 
   let requireCall;
 
