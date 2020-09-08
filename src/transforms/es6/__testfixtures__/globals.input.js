@@ -1,9 +1,10 @@
 goog.provide('my.transform.clazz');
 
-goog.require('os.ui.MyClass');
-goog.require('os.MapContainer');
 goog.require('os.alert.AlertManager'); // no duplicates
 goog.require('os.alertManager'); // no duplicates
+goog.require('test.os.MapContainer');
+goog.require('test.os.ui.MyClass');
+
 
 /**
  * @type {string}
@@ -19,22 +20,22 @@ my.transform.clazz.STR_CONSTANT = 'str.constant.value';
  */
 my.transform.clazz.i = function(x, y, z) {
   // an implicit require
-  os.ui.apply();
+  test.os.ui.apply();
 
   // an implicit require reusing the generated require
-  os.ui.anotherAction();
+  test.os.ui.anotherAction();
 
   // a non-implicit require with partially conflicting namespace to the implicit require
-  const mc = new os.ui.MyClass();
+  const mc = new test.os.ui.MyClass();
 
   // an implicit require with an assignment expression
   const s = os.settings.get(my.transform.clazz.STR_CONSTANT);
 
   // usually implicit require, sometimes require'd properly (NOT require'd here)
-  os.feature.doSomething();
+  test.os.feature.doSomething();
 
   // usually implicit require, sometimes require'd properly (require'd here)
-  os.MapContainer.getInstance().doSomething();
+  test.os.MapContainer.getInstance().doSomething();
 
   // usually implicit require, but require'd anyway and needs the implicit conversion instead
   os.alertManager.warning('WARNING');

@@ -1,3 +1,4 @@
+const fs = require('fs');
 const jscs = require('jscodeshift');
 const jscsUtils = require('./jscs');
 
@@ -18,15 +19,17 @@ let OSGlobalTransformConfig;
 /**
  * @type {Object<String, OSGlobalTransformConfig>}
  */
-const osGlobals_ = {};
+let osGlobals_ = {};
 
 /**
  * Utility function to update/append globals from command-line configs
  * 
  * @param {Object<String, OSGlobalTransformConfig>} globals 
+ * @param {?boolean} opt_replace
  */
-const addOSGlobals = (globals) => {
-  Object.assign(osGlobals_, globals);
+const addOSGlobals = (globals, opt_replace) => {
+  if (opt_replace === true) osGlobals_ = globals;
+  else Object.assign(osGlobals_, globals);
 };
 
 /**
@@ -64,6 +67,23 @@ const convertOSGlobal = (root, path, modules) => {
     replaceLegacyRequire(root, key, config.require, (config.singleton === true));
   }
 };
+
+// on creation, read ".jscodeshift.json" file(s) from this folder and sibling folders
+// TODO move this to a new, "settings" module someday
+(function(){
+  const workspace = '../'; // relative from the npm run -- not this file
+  const filename = '.jscodeshift.json';
+  fs.readdirSync(workspace).forEach((folder) => {
+    const filepath = `${workspace}${folder}/${filename}`;
+    if (fs.existsSync(filepath)) {
+      const config = JSON.parse(fs.readFileSync(filepath, 'utf8'));
+      if (config) {
+        addOSGlobals(config['globals']);
+      }
+    }
+  });
+})();
+
 
 module.exports = {
   addOSGlobals,

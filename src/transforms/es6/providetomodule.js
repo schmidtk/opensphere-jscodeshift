@@ -1,4 +1,3 @@
-const fs = require('fs');
 const jscs = require('jscodeshift');
 const {createFindMemberExprObject} = require('../../utils/ast');
 const {memberExpressionToString, printSource} = require('../../utils/jscs');
@@ -7,23 +6,8 @@ const {addRequire, isClosureClass, isControllerClass, isDirective, isGoogDefine,
 const {createAssignmentShim, createUIShim} = require('../../utils/shim');
 const {logger} = require('../../utils/logger');
 const {resolveThis} = require('../../utils/resolvethis');
-const {addOSGlobals, isOSGlobal, isOSGlobalKey, convertOSGlobal} = require('../../utils/opensphere');
+const {isOSGlobal, isOSGlobalKey, convertOSGlobal} = require('../../utils/opensphere');
 
-
-// on creation, read ".jscodeshift.json" file(s) from this folder and sibling folders
-(function(){
-  const workspace = '../'; // relative from the npm run -- not this file
-  const filename = '.jscodeshift.json';
-  fs.readdirSync(workspace).forEach((folder) => {
-    const filepath = `${workspace}${folder}/${filename}`;
-    if (fs.existsSync(filepath)) {
-      const config = JSON.parse(fs.readFileSync(filepath, 'utf8'));
-      if (config) {
-        addOSGlobals(config['globals']);
-      }
-    }
-  });
-})();
 
 module.exports = (file, api, options) => {
   const root = jscs(file.source);
