@@ -8,6 +8,7 @@ defineTest(__dirname, 'providetomodule', options, 'controller');
 defineTest(__dirname, 'providetomodule', options, 'defines');
 defineTest(__dirname, 'providetomodule', options, 'directive');
 defineTest(__dirname, 'providetomodule', options, 'enum');
+defineTest(__dirname, 'providetomodule', options, 'globals');
 defineTest(__dirname, 'providetomodule', options, 'interface');
 defineTest(__dirname, 'providetomodule', options, 'multiprovidesclass');
 defineTest(__dirname, 'providetomodule', options, 'multiprovidesnoref');

@@ -6,6 +6,8 @@ const {addRequire, isClosureClass, isControllerClass, isDirective, isGoogDefine,
 const {createAssignmentShim, createUIShim} = require('../../utils/shim');
 const {logger} = require('../../utils/logger');
 const {resolveThis} = require('../../utils/resolvethis');
+const {isOSGlobal, isOSGlobalKey, convertOSGlobal} = require('../../utils/opensphere');
+
 
 module.exports = (file, api, options) => {
   const root = jscs(file.source);
@@ -127,8 +129,8 @@ module.exports = (file, api, options) => {
   const unusedRequires = [];
   requireStatements.paths().reverse();
   requireStatements.forEach(path => {
-    if (path.parent.value.type === 'Program') {
-      const unusedRequire = replaceLegacyRequire(root, path.value.expression.arguments[0].value, true);
+    if (path.parent.value.type === 'Program' && !isOSGlobalKey(path.value.expression.arguments[0].value)) {
+      const unusedRequire = replaceLegacyRequire(root, path.value.expression.arguments[0].value);
       if (unusedRequire) {
         unusedRequires.push(unusedRequire);
       }
@@ -148,6 +150,12 @@ module.exports = (file, api, options) => {
   if (moduleCount > 1) {
     logger.warn(`${moduleCount} modules remaining in file. Combine or separate into new files.`);
   }
+
+  // convert opensphere globals (implicit dependencies) AFTER module conversions:
+  // this avoids issues with path.to.MyModule (should already be replaced) conflicting with path.to.globalFunction
+  root.find(jscs.MemberExpression, isOSGlobal).forEach(path => {
+    convertOSGlobal(root, path, modules);
+  });
 
   sortModuleRequires(root);
 
