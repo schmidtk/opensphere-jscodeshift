@@ -522,12 +522,14 @@ const convertNamespaceExpression = (root, path, moduleName) => {
   const varDeclarator = jscs.variableDeclarator(jscs.identifier(propName), expression.right || null);
   const varDeclaration = jscs.variableDeclaration(kind, [varDeclarator]);
 
-  // these annotations are assumed within a module
-  const newComment = path.value.comments.pop().value
-    .replace('\n * @const', '')
-    .replace('\n * @private', '');
+  if (path.value.comments) {
+    // these annotations are assumed within a module
+    const newComment = path.value.comments.pop().value
+      .replace('\n * @const', '')
+      .replace('\n * @private', '');
 
-  varDeclaration.comments = [jscs.commentBlock(newComment)];
+    varDeclaration.comments = [jscs.commentBlock(newComment)];
+  }
 
   jscs(path).replaceWith(varDeclaration);
 
