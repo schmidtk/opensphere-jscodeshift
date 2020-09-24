@@ -255,34 +255,34 @@ const replaceFQClass = (node, moduleName) => {
  * @param {NodePath} path The path.
  * @param {string} moduleName The module name.
  */
-const moveSingletonToClass = (path, moduleName) => {
-  const classDef = getClassNode(moduleName);
-  if (classDef) {
-    const className = classDef.id.name;
-    const instanceIdentifier = jscs.identifier('instance');
-    const varDeclarator = jscs.variableDeclarator(instanceIdentifier, null);
-    const varDeclaration = jscs.variableDeclaration('let', [varDeclarator]);
-    const instanceComment = ['*', ` * Global ${className} instance.`, ` * @type {${className}|undefined}`, ' '].join('\n');
-    varDeclaration.comments = [jscs.commentBlock(instanceComment)];
+// const moveSingletonToClass = (path, moduleName) => {
+//   const classDef = getClassNode(moduleName);
+//   if (classDef) {
+//     const className = classDef.id.name;
+//     const instanceIdentifier = jscs.identifier('instance');
+//     const varDeclarator = jscs.variableDeclarator(instanceIdentifier, null);
+//     const varDeclaration = jscs.variableDeclaration('let', [varDeclarator]);
+//     const instanceComment = ['*', ` * Global ${className} instance.`, ` * @type {${className}|undefined}`, ' '].join('\n');
+//     varDeclaration.comments = [jscs.commentBlock(instanceComment)];
 
-    jscs(path.parent).replaceWith(varDeclaration);
+//     jscs(path.parent).replaceWith(varDeclaration);
 
-    const getInstanceFn = jscs.functionExpression(null, [], jscs.blockStatement([
-      jscs.ifStatement(
-        jscs.unaryExpression('!', instanceIdentifier, true),
-        jscs.blockStatement([
-          jscs.expressionStatement(
-            jscs.assignmentExpression('=', instanceIdentifier, jscs.newExpression(jscs.identifier(className), []))
-          )
-        ])
-      ),
-      jscs.returnStatement(instanceIdentifier)
-    ]));
-    const classMethod = addMethodToClass(moduleName, 'getInstance', getInstanceFn, true);
-    const getInstanceComments = ['*', ' * Get the global instance.', ` * @return {!${className}}`, ' '].join('\n');
-    classMethod.comments = [jscs.commentBlock(getInstanceComments)];
-  }
-};
+//     const getInstanceFn = jscs.functionExpression(null, [], jscs.blockStatement([
+//       jscs.ifStatement(
+//         jscs.unaryExpression('!', instanceIdentifier, true),
+//         jscs.blockStatement([
+//           jscs.expressionStatement(
+//             jscs.assignmentExpression('=', instanceIdentifier, jscs.newExpression(jscs.identifier(className), []))
+//           )
+//         ])
+//       ),
+//       jscs.returnStatement(instanceIdentifier)
+//     ]));
+//     const classMethod = addMethodToClass(moduleName, 'getInstance', getInstanceFn, true);
+//     const getInstanceComments = ['*', ' * Get the global instance.', ` * @return {!${className}}`, ' '].join('\n');
+//     classMethod.comments = [jscs.commentBlock(getInstanceComments)];
+//   }
+// };
 
 const replaceBaseWithSuper = (path, moduleName) => {
   const args = path.value.arguments;
@@ -596,10 +596,13 @@ const convertClass = (root, path, moduleName) => {
   }).forEach(path => convertStaticProperty(root, path, moduleName));
 
   // move goog.addSingletonGetter to a class getInstance function
-  root.find(jscs.CallExpression, {
-    callee: createFindMemberExprObject('goog.addSingletonGetter'),
-    arguments: [createFindMemberExprObject(moduleName)]
-  }).forEach(path => moveSingletonToClass(path, moduleName));
+  //
+  // TODO: The static getInstance call is not compatible with parent classes that have goog.addSingletonGetter.
+  //
+  // root.find(jscs.CallExpression, {
+  //   callee: createFindMemberExprObject('goog.addSingletonGetter'),
+  //   arguments: [createFindMemberExprObject(moduleName)]
+  // }).forEach(path => moveSingletonToClass(path, moduleName));
 
   // move goog.inherits to class extends keyword
   root.find(jscs.CallExpression, {
