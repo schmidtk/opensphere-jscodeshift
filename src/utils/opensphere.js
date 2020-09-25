@@ -64,7 +64,7 @@ const convertOSGlobal = (root, path, modules) => {
   const config = osGlobals_[key];
 
   if (config) {
-    replaceLegacyRequire(root, key, config.require, (config.singleton === true));
+    replaceLegacyRequire(root, key, config.require, (config.singleton === true), config.varName);
   }
 };
 

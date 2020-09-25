@@ -26,6 +26,7 @@ const DISALLOWED_VARS = [
   // Special values not handled by reserved-words
   'undefined',
   'NaN',
+  'window',
 
   // JS/Closure keywords not handled by reserved words
   'implements',
@@ -101,12 +102,12 @@ const getVarName = (parts, prefix, suffix) => {
  * @param {string|undefined} prefix Prefix for the variable name.
  * @return {string} The variable name.
  */
-const getUniqueVarName = (root, originalName, prefix) => {
+const getUniqueVarName = (root, originalName, prefix, opt_varName) => {
   const moduleParts = originalName.split('.');
   prefix = prefix || '';
 
   // try the last part of the module name first
-  let varName = `${prefix}${moduleParts[moduleParts.length - 1]}`;
+  let varName = opt_varName || `${prefix}${moduleParts[moduleParts.length - 1]}`;
 
   // camelcase the parts
   if (!varName || hasVar(root, varName)) {

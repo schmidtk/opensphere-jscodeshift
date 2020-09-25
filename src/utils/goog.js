@@ -270,9 +270,10 @@ const addRequire = (root, toAdd) => {
  * @param {string} toReplace The str to replace.
  * @param {?string} toReplaceAlt The str to require.
  * @param {?boolean} singleton if true, include getInstance() in call
+ * @param {string=} opt_varName optional variable name to use for const
  * @return {?string} The legacy require namespace, or null if replaced.
  */
-const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton) => {
+const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton, opt_varName) => {
   // remove existing goog.require calls for the module
   const expr = {
     expression: {
@@ -301,7 +302,7 @@ const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton) => {
   }
 
   // create a variable name that doesn't shadow any local vars
-  const varName = getUniqueVarName(root, toReplace);
+  const varName = getUniqueVarName(root, toReplace, undefined, opt_varName);
 
   // create the variable declaration
   const callee = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier(requireCall));
