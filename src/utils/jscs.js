@@ -1,6 +1,5 @@
 const jscs = require('jscodeshift');
 const {createFindCallFn} = require('./ast');
-const {addRequire} = require('./goog');
 const {getDefaultSourceOptions} = require('./options');
 
 /**
@@ -84,10 +83,6 @@ const replaceFunction = (root, options) => {
 
     if (args && (!options.requiredArgs || args.length >= options.requiredArgs)) {
       jscs(path).replaceWith(createCall(options.with, args));
-
-      if (options.googRequire) {
-        addRequire(root, options.googRequire);
-      }
     }
   });
 };

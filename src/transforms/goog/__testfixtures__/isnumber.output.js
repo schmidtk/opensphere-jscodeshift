@@ -33,8 +33,8 @@ var castProperty = typeof someObject['property'] === 'number' ? (someObject['pro
 //
 
 var fn = function(someVar) {
-  return {
+  return ({
     a: typeof someVar === 'number' ? someVar : 0,
     b: false
-  };
+  });
 };

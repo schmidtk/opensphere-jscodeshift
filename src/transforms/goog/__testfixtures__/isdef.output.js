@@ -33,8 +33,8 @@ var castProperty = someObject['property'] !== undefined ? (someObject['property'
 //
 
 var fn = function(someVar) {
-  return {
+  return ({
     a: someVar !== undefined ? someVar : false,
     b: false
-  };
+  });
 };

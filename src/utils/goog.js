@@ -1,6 +1,17 @@
 const jscs = require('jscodeshift');
 
-const {createFindMemberExprObject, getUniqueVarName, isCall, isInComment, isReferenced, replaceInComments} = require('./ast');
+const {
+  createFindCallFn,
+  createFindMemberExprObject,
+  getUniqueVarName,
+  isCall,
+  isInComment,
+  isReferenced,
+  replaceInComments
+} = require('./ast');
+
+const {createCall} = require('./jscs');
+const {logger} = require('./logger');
 
 /**
  * Regular expression to detect @const JSDoc annotation.
@@ -69,6 +80,27 @@ const addExports = (root, keys, values) => {
       }
     }
   }
+};
+
+
+const getGoogModuleExports = (root) => {
+  let moduleExports;
+
+  const expr = root.find(jscs.AssignmentExpression, {
+    left: {
+      type: 'Identifier',
+      name: 'exports'
+    },
+    operator: '='
+  });
+
+  if (expr && expr.length === 1) {
+    expr.forEach((path) => {
+      moduleExports = path;
+    });
+  }
+
+  return moduleExports;
 };
 
 
@@ -284,7 +316,7 @@ const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton) => {
 
   if (toReplaceAlt) {
     expr.expression.arguments = [{value: toReplaceAlt}];
-    root.find(jscs.ExpressionStatement, expr).remove();  
+    root.find(jscs.ExpressionStatement, expr).remove();
   }
 
   let requireCall;
@@ -323,7 +355,7 @@ const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton) => {
   let replaceWith = jscs.identifier(varName);
 
   // add .getInstance() if needed for the in-line replacements
-  if (singleton === true) { 
+  if (singleton === true) {
     replaceWith = jscs.memberExpression(replaceWith, jscs.identifier('getInstance'));
     replaceWith = jscs.callExpression(replaceWith, []);
   }
@@ -336,6 +368,100 @@ const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton) => {
   replaceInComments(root, toReplace, varName);
 
   return null;
+};
+
+
+/**
+ * Replace goog.module exports with ES6 exports.
+ * @param {NodePath} root The root node.
+ */
+const replaceModuleExportsWithEs6 = (root) => {
+  const moduleExports = getGoogModuleExports(root);
+  if (moduleExports) {
+    const exportsType = moduleExports.value.right.type;
+    if (exportsType === 'Identifier') {
+      const exportDefaultDecl = jscs.exportDefaultDeclaration(jscs.identifier(moduleExports.value.right.name));
+      jscs(moduleExports.parent).replaceWith(exportDefaultDecl);
+    } else if (exportsType === 'ObjectExpression') {
+      const exportedProps = moduleExports.value.right.properties;
+      if (exportedProps && exportedProps.length) {
+        exportedProps.forEach((prop) => {
+          if (prop && prop.value && prop.value.type === 'Identifier') {
+            const propName = prop.value.name;
+            root.find(jscs.VariableDeclaration, {
+              declarations: [{
+                type: 'VariableDeclarator',
+                id: {
+                  name: propName
+                }
+              }]
+            }).forEach((path) => {
+              const oldComments = path.value.comments;
+              path.value.comments = null;
+
+              const namedExport = jscs.exportNamedDeclaration(path.value);
+              if (oldComments) {
+                namedExport.comments = oldComments.map(c => jscs.commentBlock(c.value));
+              }
+
+              jscs(path).replaceWith(namedExport);
+            });
+          }
+        });
+      } else {
+        logger.warn('No properties found in exports object.');
+      }
+
+      // remove the exports expression
+      jscs(moduleExports.parent).remove();
+    } else {
+      logger.warn(`Unsupported exports type: ${exportsType}`);
+    }
+  }
+};
+
+
+/**
+ * Remove goog.module.declareLegacyNamespace statement.
+ * @param {NodePath} root The root node.
+ */
+const removeLegacyNamespace = (root) => {
+  // remove goog.module.declareLegacyNamespace calls - this can only be called within a goog.module
+  const findLegacyNs = createFindCallFn('goog.module.declareLegacyNamespace');
+  root.find(jscs.CallExpression, findLegacyNs).forEach((path, idx, paths) => {
+    jscs(path).remove();
+  });
+};
+
+
+/**
+ * Replace goog.module statement with goog.declareModuleId.
+ * @param {NodePath} root The root node.
+ */
+const replaceModulesWithDeclareModuleId = (root) => {
+  const findFn = createFindCallFn('goog.module');
+  const moduleCalls = root.find(jscs.CallExpression, findFn);
+
+  moduleCalls.forEach((path, idx, paths) => {
+    // create the goog.declareModuleId statement
+    const args = path.value.arguments;
+    const declareModuleExpr = jscs.expressionStatement(createCall('goog.declareModuleId', args));
+
+    const oldComments = path.parent.value.comments;
+    path.parent.value.comments = null;
+    if (oldComments) {
+      declareModuleExpr.comments = oldComments.map(c => jscs.commentBlock(c.value));
+    }
+
+    // replace the goog.module statement with goog.declareModuleId
+    jscs(path.parent).replaceWith(declareModuleExpr);
+  });
+
+  if (!moduleCalls.length) {
+    logger.warn(`No goog.module statement detected.`);
+  } else if (moduleCalls.length > 1) {
+    logger.warn(`Multiple goog.module statements detected.`);
+  }
 };
 
 
@@ -396,6 +522,7 @@ const sortModuleRequires = root => {
 module.exports = {
   addExports,
   addRequire,
+  getGoogModuleExports,
   isGoogDeclareLegacyNamespace,
   isGoogDefine,
   isGoogModule,
@@ -409,7 +536,10 @@ module.exports = {
   isInterface,
   isConst,
   isPrivate,
+  removeLegacyNamespace,
   replaceLegacyRequire,
+  replaceModuleExportsWithEs6,
+  replaceModulesWithDeclareModuleId,
   sortRequires,
   sortModuleRequires
 };

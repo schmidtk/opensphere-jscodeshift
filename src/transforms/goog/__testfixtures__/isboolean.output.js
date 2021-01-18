@@ -33,8 +33,8 @@ var castProperty = typeof someObject['property'] === 'boolean' ? (someObject['pr
 //
 
 var fn = function(someVar) {
-  return {
+  return ({
     a: typeof someVar === 'boolean' ? someVar : false,
     b: false
-  };
+  });
 };

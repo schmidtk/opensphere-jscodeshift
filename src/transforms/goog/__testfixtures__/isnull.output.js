@@ -33,8 +33,8 @@ var castProperty = someObject['property'] === null ? (someObject['property']) : 
 //
 
 var fn = function(someVar) {
-  return {
+  return ({
     a: someVar === null ? someVar : false,
     b: false
-  };
+  });
 };

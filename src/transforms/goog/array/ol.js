@@ -3,6 +3,7 @@
  */
 
 const jscs = require('jscodeshift');
+const {addRequire} = require('../../../utils/goog');
 const jscsUtil = require('../../../utils/jscs');
 const {getDefaultSourceOptions} = require('../../../utils/options');
 
@@ -18,31 +19,31 @@ module.exports = (file, api, options) => {
   jscsUtil.replaceFunction(root, {
     replace: 'goog.array.contains',
     with: 'ol.array.includes',
-    requiredArgs: 2,
-    googRequire: 'ol.array'
+    requiredArgs: 2
   });
+  addRequire(root, 'ol.array');
 
   jscsUtil.replaceFunction(root, {
     replace: 'goog.array.find',
     with: 'ol.array.find',
     bindArgs: [1, 2],
-    requiredArgs: 2,
-    googRequire: 'ol.array'
+    requiredArgs: 2
   });
+  addRequire(root, 'ol.array');
 
   jscsUtil.replaceFunction(root, {
     replace: 'goog.array.findIndex',
     with: 'ol.array.findIndex',
     bindArgs: [1, 2],
-    requiredArgs: 2,
-    googRequire: 'ol.array'
+    requiredArgs: 2
   });
+  addRequire(root, 'ol.array');
 
   jscsUtil.replaceFunction(root, {
     replace: 'goog.array.remove',
-    with: 'ol.array.remove',
-    googRequire: 'ol.array'
+    with: 'ol.array.remove'
   });
+  addRequire(root, 'ol.array');
 
   return root.toSource(getDefaultSourceOptions());
 };
