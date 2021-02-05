@@ -387,6 +387,54 @@ const isDefaultExport = (root) => {
 
 
 /**
+ * Find the declaration of a goog named export and create an ES6 named export declaration.
+ * @param {NodePath} root The root node.
+ * @param {Node} prop The exported property.
+ */
+const createNamedExport = (root, prop) => {
+  if (prop && prop.value && prop.value.type === 'Identifier') {
+    const propName = prop.value.name;
+
+    const varDeclarations = root.find(jscs.VariableDeclaration, {
+      declarations: [{
+        type: 'VariableDeclarator',
+        id: {name: propName}
+      }]
+    });
+
+    if (varDeclarations && varDeclarations.length) {
+      varDeclarations.forEach(exportNamedDeclaration);
+    }
+
+    const classDeclarations = root.find(jscs.ClassDeclaration, {
+      id: {name: propName}
+    });
+
+    if (classDeclarations && classDeclarations.length) {
+      classDeclarations.forEach(exportNamedDeclaration);
+    }
+  }
+};
+
+
+/**
+ * Add a named export to a path node.
+ * @param {NodePath} path The path node.
+ */
+const exportNamedDeclaration = (path) => {
+  const oldComments = path.value.comments;
+  path.value.comments = null;
+
+  const namedExport = jscs.exportNamedDeclaration(path.value);
+  if (oldComments) {
+    namedExport.comments = oldComments.map(c => jscs.commentBlock(c.value));
+  }
+
+  jscs(path).replaceWith(namedExport);
+};
+
+
+/**
  * Replace goog.module exports with ES6 exports.
  * @param {NodePath} root The root node.
  * @return {boolean} If the module is using a default export.
@@ -406,27 +454,7 @@ const replaceModuleExportsWithEs6 = (root) => {
       const exportedProps = moduleExports.value.right.properties;
       if (exportedProps && exportedProps.length) {
         exportedProps.forEach((prop) => {
-          if (prop && prop.value && prop.value.type === 'Identifier') {
-            const propName = prop.value.name;
-            root.find(jscs.VariableDeclaration, {
-              declarations: [{
-                type: 'VariableDeclarator',
-                id: {
-                  name: propName
-                }
-              }]
-            }).forEach((path) => {
-              const oldComments = path.value.comments;
-              path.value.comments = null;
-
-              const namedExport = jscs.exportNamedDeclaration(path.value);
-              if (oldComments) {
-                namedExport.comments = oldComments.map(c => jscs.commentBlock(c.value));
-              }
-
-              jscs(path).replaceWith(namedExport);
-            });
-          }
+          createNamedExport(root, prop);
         });
       } else {
         logger.warn('No properties found in exports object.');
