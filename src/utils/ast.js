@@ -34,6 +34,25 @@ const DISALLOWED_VARS = [
 
 
 /**
+ * Copy comments from one node to another.
+ * @param {Node} source The source node.
+ * @param {Node} target The target node.
+ * @param {boolean=} remove If comments should also be removed from the source, defaults to true.
+ */
+const copyComments = (source, target, remove = true) => {
+  if (source && source.comments && target) {
+    const oldComments = source.comments;
+
+    if (remove) {
+      source.comments = null;
+    }
+
+    target.comments = oldComments ? oldComments.map(c => jscs.commentBlock(c.value)) : null;
+  }
+};
+
+
+/**
  * Create a Node find function to locate a call expression by path (ie, `goog.array.find`).
  * @param {string} path The call function path.
  * @return {function(Node):boolean}
@@ -227,13 +246,14 @@ const replaceFunctionExpressionWithArrow = (node) => {
   }
 
   const arrowFn = jscs.arrowFunctionExpression(node.params, arrowBody, node.expression);
-  arrowFn.comments = node.comments;
+  copyComments(node, arrowFn);
 
   return arrowFn;
 };
 
 
 module.exports = {
+  copyComments,
   createFindCallFn,
   createFindMemberExprObject,
   getUniqueVarName,

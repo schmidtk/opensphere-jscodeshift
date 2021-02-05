@@ -1,6 +1,7 @@
 const jscs = require('jscodeshift');
 
 const {
+  copyComments,
   createFindCallFn,
   createFindMemberExprObject,
   getUniqueVarName,
@@ -83,21 +84,24 @@ const addExports = (root, keys, values) => {
 };
 
 
+/**
+ * Get the goog exports assignment expression.
+ * @param {NodePath} root The root node path.
+ * @return {NodePath|undefined} The exports, or undefined if not found.
+ */
 const getGoogModuleExports = (root) => {
   let moduleExports;
 
-  const expr = root.find(jscs.AssignmentExpression, {
+  const exprPaths = root.find(jscs.AssignmentExpression, {
     left: {
       type: 'Identifier',
       name: 'exports'
     },
     operator: '='
-  });
+  }).paths();
 
-  if (expr && expr.length === 1) {
-    expr.forEach((path) => {
-      moduleExports = path;
-    });
+  if (exprPaths && exprPaths.length === 1) {
+    moduleExports = exprPaths[0];
   }
 
   return moduleExports;
@@ -392,26 +396,29 @@ const isDefaultExport = (root) => {
  * @param {Node} prop The exported property.
  */
 const createNamedExport = (root, prop) => {
-  if (prop && prop.value && prop.value.type === 'Identifier') {
-    const propName = prop.value.name;
+  if (prop && prop.value) {
+    // If the property is shorthand or the value is an Identifier, find the reference in the file and export it inline
+    if (prop.shorthand || prop.value.type === 'Identifier') {
+      const propName = prop.value.name;
 
-    const varDeclarations = root.find(jscs.VariableDeclaration, {
-      declarations: [{
-        type: 'VariableDeclarator',
+      const varDeclarations = root.find(jscs.VariableDeclaration, {
+        declarations: [{
+          type: 'VariableDeclarator',
+          id: {name: propName}
+        }]
+      });
+
+      if (varDeclarations && varDeclarations.length) {
+        varDeclarations.forEach(exportNamedDeclaration);
+      }
+
+      const classDeclarations = root.find(jscs.ClassDeclaration, {
         id: {name: propName}
-      }]
-    });
+      });
 
-    if (varDeclarations && varDeclarations.length) {
-      varDeclarations.forEach(exportNamedDeclaration);
-    }
-
-    const classDeclarations = root.find(jscs.ClassDeclaration, {
-      id: {name: propName}
-    });
-
-    if (classDeclarations && classDeclarations.length) {
-      classDeclarations.forEach(exportNamedDeclaration);
+      if (classDeclarations && classDeclarations.length) {
+        classDeclarations.forEach(exportNamedDeclaration);
+      }
     }
   }
 };
@@ -422,13 +429,8 @@ const createNamedExport = (root, prop) => {
  * @param {NodePath} path The path node.
  */
 const exportNamedDeclaration = (path) => {
-  const oldComments = path.value.comments;
-  path.value.comments = null;
-
   const namedExport = jscs.exportNamedDeclaration(path.value);
-  if (oldComments) {
-    namedExport.comments = oldComments.map(c => jscs.commentBlock(c.value));
-  }
+  copyComments(path.value, namedExport);
 
   jscs(path).replaceWith(namedExport);
 };
@@ -453,15 +455,40 @@ const replaceModuleExportsWithEs6 = (root) => {
     } else if (exportsType === 'ObjectExpression') {
       const exportedProps = moduleExports.value.right.properties;
       if (exportedProps && exportedProps.length) {
+        //
+        // Named exports should be using shorthand notation, while a default export object will not.
+        //
+        // Named exports:
+        //
+        //   exports = {EXPORT_1, export2, Export3};
+        //
+        // Default object export (typically used to export an enum):
+        //
+        //   exports = {
+        //     EXPORT_1: 'value1',
+        //     EXPORT_2: 'value2'
+        //   }
+        //
         exportedProps.forEach((prop) => {
-          createNamedExport(root, prop);
+          isDefault = isDefault || (prop && !prop.shorthand);
         });
+
+        if (isDefault) {
+          const exportDefaultDecl = jscs.exportDefaultDeclaration(moduleExports.value.right);
+          copyComments(moduleExports.parent.value, exportDefaultDecl);
+
+          jscs(moduleExports.parent).replaceWith(exportDefaultDecl);
+        } else {
+          exportedProps.forEach((prop) => {
+            createNamedExport(root, prop);
+          });
+
+          // remove the exports expression
+          jscs(moduleExports.parent).remove();
+        }
       } else {
         logger.warn('No properties found in exports object.');
       }
-
-      // remove the exports expression
-      jscs(moduleExports.parent).remove();
     } else {
       logger.warn(`Unsupported exports type: ${exportsType}`);
     }
@@ -515,11 +542,7 @@ const replaceModuleWithDeclareModuleId = (root) => {
     const declareModuleExpr = jscs.expressionStatement(createCall('goog.declareModuleId', [jscs.literal(newModuleName)]));
 
     // Preserve comments at the top of the file.
-    const oldComments = path.parent.value.comments;
-    path.parent.value.comments = null;
-    if (oldComments) {
-      declareModuleExpr.comments = oldComments.map(c => jscs.commentBlock(c.value));
-    }
+    copyComments(path.parent.value, declareModuleExpr);
 
     // Replace the goog.module statement with goog.declareModuleId.
     jscs(path.parent).replaceWith(declareModuleExpr);
