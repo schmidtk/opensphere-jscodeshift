@@ -372,16 +372,36 @@ const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton) => {
 
 
 /**
- * Replace goog.module exports with ES6 exports.
+ * If the document is using a default export.
  * @param {NodePath} root The root node.
  */
+const isDefaultExport = (root) => {
+  const moduleExports = getGoogModuleExports(root);
+  if (moduleExports) {
+    const exportsType = moduleExports.value.right.type;
+    return exportsType === 'Identifier';
+  }
+
+  return false;
+};
+
+
+/**
+ * Replace goog.module exports with ES6 exports.
+ * @param {NodePath} root The root node.
+ * @return {boolean} If the module is using a default export.
+ */
 const replaceModuleExportsWithEs6 = (root) => {
+  let isDefault = false;
+
   const moduleExports = getGoogModuleExports(root);
   if (moduleExports) {
     const exportsType = moduleExports.value.right.type;
     if (exportsType === 'Identifier') {
       const exportDefaultDecl = jscs.exportDefaultDeclaration(jscs.identifier(moduleExports.value.right.name));
       jscs(moduleExports.parent).replaceWith(exportDefaultDecl);
+
+      isDefault = true;
     } else if (exportsType === 'ObjectExpression') {
       const exportedProps = moduleExports.value.right.properties;
       if (exportedProps && exportedProps.length) {
@@ -418,6 +438,8 @@ const replaceModuleExportsWithEs6 = (root) => {
       logger.warn(`Unsupported exports type: ${exportsType}`);
     }
   }
+
+  return isDefault;
 };
 
 
@@ -435,33 +457,53 @@ const removeLegacyNamespace = (root) => {
 
 
 /**
+ * Gets a temporary ES6 module name, when using a shim for the original.
+ * @param {string} moduleName The original module name.
+ * @return {string} The temp module name.
+ */
+const getTempModuleName = (moduleName) => `${moduleName}Temp`;
+
+
+/**
  * Replace goog.module statement with goog.declareModuleId.
  * @param {NodePath} root The root node.
+ * @return {string|undefined} The declared module name.
  */
-const replaceModulesWithDeclareModuleId = (root) => {
+const replaceModuleWithDeclareModuleId = (root) => {
+  const isDefault = isDefaultExport(root);
+
   const findFn = createFindCallFn('goog.module');
   const moduleCalls = root.find(jscs.CallExpression, findFn);
+  const path = moduleCalls.paths()[0];
+  if (!path) {
+    logger.warn(`No goog.module statement detected.`);
+    return undefined;
+  }
 
-  moduleCalls.forEach((path, idx, paths) => {
-    // create the goog.declareModuleId statement
-    const args = path.value.arguments;
-    const declareModuleExpr = jscs.expressionStatement(createCall('goog.declareModuleId', args));
+  // Create the goog.declareModuleId statement.
+  const moduleName = path.value.arguments[0].value;
+  const newModuleName = isDefault ? getTempModuleName(moduleName) : moduleName;
+  if (moduleName) {
+    const declareModuleExpr = jscs.expressionStatement(createCall('goog.declareModuleId', [jscs.literal(newModuleName)]));
 
+    // Preserve comments at the top of the file.
     const oldComments = path.parent.value.comments;
     path.parent.value.comments = null;
     if (oldComments) {
       declareModuleExpr.comments = oldComments.map(c => jscs.commentBlock(c.value));
     }
 
-    // replace the goog.module statement with goog.declareModuleId
+    // Replace the goog.module statement with goog.declareModuleId.
     jscs(path.parent).replaceWith(declareModuleExpr);
-  });
-
-  if (!moduleCalls.length) {
+  } else {
     logger.warn(`No goog.module statement detected.`);
-  } else if (moduleCalls.length > 1) {
-    logger.warn(`Multiple goog.module statements detected.`);
   }
+
+  if (moduleCalls.length > 1) {
+    logger.warn(`Multiple goog.module statements detected. Please verify the transformation result.`);
+  }
+
+  return moduleName;
 };
 
 
@@ -538,8 +580,10 @@ module.exports = {
   isPrivate,
   removeLegacyNamespace,
   replaceLegacyRequire,
+  getTempModuleName,
+  isDefaultExport,
   replaceModuleExportsWithEs6,
-  replaceModulesWithDeclareModuleId,
+  replaceModuleWithDeclareModuleId,
   sortRequires,
   sortModuleRequires
 };

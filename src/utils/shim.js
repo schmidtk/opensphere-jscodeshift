@@ -2,6 +2,7 @@ const fs = require('fs');
 const jscs = require('jscodeshift');
 
 const {createFindMemberExprObject} = require('./ast');
+const {getTempModuleName} = require('./goog');
 const {createCall, createMemberExpression} = require('./jscs');
 const {getDefaultSourceOptions} = require('./options');
 const {logger} = require('./logger');
@@ -80,6 +81,37 @@ const createAssignmentShim = (root, path, moduleName, basePath, writeFile) => {
 
 
 /**
+ * Creates a shim file to expose a goog.module default export via the original namespace.
+ * @param {string} modulePath Path to the module.
+ * @param {string} moduleName The module name.
+ */
+const createEs6Shim = (modulePath, moduleName) => {
+  const shimPath = modulePath.replace(/\.js/, '.shim.js');
+  if (fs.existsSync(shimPath)) {
+    return;
+  }
+
+  const exportName = moduleName.split('.').pop();
+  const tempModuleName = getTempModuleName(moduleName);
+
+  const program = jscs.program([]);
+  program.body.push(jscs.expressionStatement(createCall('goog.module', [jscs.literal(moduleName)])));
+
+  const objPattern = jscs.objectPattern([jscs.property('init', jscs.identifier('default'), jscs.identifier(exportName))]);
+  const defaultDeclarator = jscs.variableDeclarator(objPattern, createCall('goog.require', [jscs.literal(tempModuleName)]));
+  program.body.push(jscs.variableDeclaration('const', [defaultDeclarator]));
+
+  const exportsAssignment = jscs.assignmentExpression('=', jscs.identifier('exports'), jscs.identifier(exportName));
+  program.body.push(jscs.expressionStatement(exportsAssignment));
+
+  logger.info(`Creating default export shim: ${shimPath}`);
+
+  const shimSource = jscs(program).toSource(getDefaultSourceOptions());
+  fs.writeFileSync(shimPath, `${shimSource}\n`, 'utf8');
+};
+
+
+/**
  * Creates a shim file for an Angular UI.
  * @param {string} uiPath Path to the UI file.
  * @param {string} controllerName The original controller name.
@@ -124,5 +156,6 @@ const createUIShim = (uiPath, controllerName, directiveName) => {
 
 module.exports = {
   createAssignmentShim,
+  createEs6Shim,
   createUIShim
 };
