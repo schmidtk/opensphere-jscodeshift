@@ -1,4 +1,4 @@
-goog.declareModuleId('os.ns.MyClassTemp');
+goog.declareModuleId('os.ns.MyClass');
 
 const os1 = goog.require('os1');
 const ParentClass = goog.require('os.ns.ParentClass');

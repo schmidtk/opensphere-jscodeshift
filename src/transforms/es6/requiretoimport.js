@@ -6,7 +6,7 @@ const {printSource} = require('../../utils/jscs');
 const {logger} = require('../../utils/logger');
 
 const {createFindMemberExprObject} = require('../../utils/ast');
-const {getDependency, loadDeps} = require('../../utils/goog');
+const {getDependency, getTempModuleName, loadDeps} = require('../../utils/goog');
 
 loadDeps();
 
@@ -31,7 +31,7 @@ module.exports = (file, api, options) => {
     const declarator = requireDecl.value.declarations[0];
     const moduleName = declarator.init.arguments[0].value;
 
-    const dependency = getDependency(moduleName);
+    const dependency = getDependency(getTempModuleName(moduleName)) || getDependency(moduleName);
     if (dependency && dependency.moduleType === 'es6') {
       let depPath = dependency.path;
       if (depPath.startsWith(`${currentProject}/`)) {
@@ -39,10 +39,10 @@ module.exports = (file, api, options) => {
         const depDir = path.resolve(path.join(workspacePath, dependency.path), '..');
         const depName = path.basename(dependency.path).replace('.js', '');
 
-        if (fileDir === depDir) {
-          depPath = `./${depName}`;
-        } else {
-          depPath = path.join(path.relative(fileDir, depDir), depName);
+        depPath = path.join(path.relative(fileDir, depDir), depName);
+
+        if (!depPath.startsWith('.')) {
+          depPath = `./${depPath}`;
         }
       }
 
@@ -60,6 +60,27 @@ module.exports = (file, api, options) => {
         jscs(requireDecl).replaceWith(importDecl);
       } else {
         logger.warn(`Unsupported goog imports type: ${imports.type}`);
+      }
+    }
+  });
+
+  const requireTypeDeclarations = root.find(jscs.VariableDeclaration, {
+    declarations: [{
+      init: {
+        type: 'CallExpression',
+        callee: createFindMemberExprObject('goog.requireType')
+      }
+    }]
+  });
+
+  requireTypeDeclarations.forEach((requireTypeDecl) => {
+    const declarator = requireTypeDecl.value.declarations[0];
+    const moduleName = declarator.init.arguments[0].value;
+
+    const dependency = getDependency(getTempModuleName(moduleName)) || getDependency(moduleName);
+    if (dependency && dependency.moduleType === 'es6') {
+      if (declarator.id.type === 'Identifier') {
+        declarator.id = jscs.objectPattern([jscs.property('init', jscs.identifier('default'), declarator.id)]);
       }
     }
   });

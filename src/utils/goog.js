@@ -608,9 +608,10 @@ const getTempModuleName = (moduleName) => `${moduleName}Temp`;
 /**
  * Replace goog.module statement with goog.declareModuleId.
  * @param {NodePath} root The root node.
+ * @param {boolean=} shimDefault If default exports should be shimmed. Defaults to false.
  * @return {string|undefined} The declared module name.
  */
-const replaceModuleWithDeclareModuleId = (root) => {
+const replaceModuleWithDeclareModuleId = (root, shimDefault = false) => {
   const isDefault = isDefaultExport(root);
 
   const findFn = createFindCallFn('goog.module');
@@ -623,7 +624,7 @@ const replaceModuleWithDeclareModuleId = (root) => {
 
   // Create the goog.declareModuleId statement.
   const moduleName = path.value.arguments[0].value;
-  const newModuleName = isDefault ? getTempModuleName(moduleName) : moduleName;
+  const newModuleName = isDefault && shimDefault ? getTempModuleName(moduleName) : moduleName;
   if (moduleName) {
     const declareModuleExpr = jscs.expressionStatement(createCall('goog.declareModuleId', [jscs.literal(newModuleName)]));
 
