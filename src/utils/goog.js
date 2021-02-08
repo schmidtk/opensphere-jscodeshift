@@ -35,7 +35,7 @@ const getObjectProperties = (keys, values) => {
 
 
 /**
- * Add exports to the source.
+ * Add goog.module exports to the source.
  * @param {NodePath} root The root node path.
  * @param {Array<string>|string} keys The export key(s). Use a string for default export, or array of strings for
  *                                    non-default exports.
@@ -417,7 +417,17 @@ const createNamedExport = (root, prop) => {
       });
 
       if (classDeclarations && classDeclarations.length) {
-        classDeclarations.forEach(exportNamedDeclaration);
+        classDeclarations.forEach((classDecl) => {
+          if (propName === 'Controller') {
+            const exportSpecifier = jscs.exportSpecifier(jscs.identifier(propName), jscs.identifier(propName));
+            const namedExport = jscs.exportNamedDeclaration(null, [exportSpecifier]);
+
+            const program = root.find(jscs.Program).get().value;
+            program.body.push(namedExport);
+          } else {
+            exportNamedDeclaration(classDecl);
+          }
+        });
       }
     }
   }

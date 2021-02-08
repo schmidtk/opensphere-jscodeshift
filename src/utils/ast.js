@@ -42,11 +42,9 @@ const DISALLOWED_VARS = [
 const copyComments = (source, target, remove = true) => {
   if (source && source.comments && target) {
     const oldComments = source.comments;
-
     if (remove) {
       source.comments = null;
     }
-
     target.comments = oldComments ? oldComments.map(c => jscs.commentBlock(c.value)) : null;
   }
 };
