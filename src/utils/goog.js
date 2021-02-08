@@ -418,9 +418,24 @@ const createNamedExport = (root, prop) => {
 
       if (classDeclarations && classDeclarations.length) {
         classDeclarations.forEach((classDecl) => {
-          if (propName === 'Controller') {
-            const exportSpecifier = jscs.exportSpecifier(jscs.identifier(propName), jscs.identifier(propName));
-            const namedExport = jscs.exportNamedDeclaration(null, [exportSpecifier]);
+          //
+          // HACK: The Closure Compiler currently won't process @ngInject within a class if the class has an inline
+          // export. To work around this, we'll leave the class definition and put the export on its own line.
+          //
+          // https://github.com/google/closure-compiler/issues/3766
+          //
+          const ngInjectIdx = jscs(classDecl).toSource().indexOf('@ngInject');
+          if (ngInjectIdx > -1) {
+            //
+            // HACK: This should be creating a ExportNamedDeclaration with an ExportSpecifier, but the ExportSpecifier
+            // builder is currently broken in recast. To work around this, we'll create/parse a snippet that contains
+            // the node we want and add that node to the program body.
+            //
+            // https://github.com/benjamn/ast-types/issues/425
+            //
+            const controllerName = classDecl.value.id.name;
+            const controllerTemp = jscs(`class ${controllerName} {}\nexport {${controllerName}};`);
+            const namedExport = controllerTemp.find(jscs.Program).get().value.body[1];
 
             const program = root.find(jscs.Program).get().value;
             program.body.push(namedExport);
