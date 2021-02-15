@@ -7,6 +7,7 @@ defineTest(__dirname, 'exportproperty', {});
 defineTest(__dirname, 'isboolean', {});
 defineTest(__dirname, 'isdef', {});
 defineTest(__dirname, 'isdefandnotnull', {});
+defineTest(__dirname, 'isfunction', {});
 defineTest(__dirname, 'isnull', {});
 defineTest(__dirname, 'isnumber', {});
 defineTest(__dirname, 'isstring', {});
