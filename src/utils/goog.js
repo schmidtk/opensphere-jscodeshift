@@ -92,10 +92,18 @@ const loadDeps = (file) => {
   const depsFile = file || process.env.DEPSFILE || 'opensphere/.build/deps.js';
   const depsPath = require.resolve(depsFile)
   if (!fs.existsSync(depsPath)) {
-    throw new Error(`Deps file does not exist: ${depsPath}`);
+    throw new Error(`Deps file does not exist: ${depsFile}`);
   }
 
   require(depsPath);
+
+  // Resolve Closure deps relative to the base deps file, so the correct version of the Closure library is used.
+  const googDepsPath = require.resolve('google-closure-library/closure/goog/deps', {paths: [depsFile]});
+  if (!fs.existsSync(googDepsPath)) {
+    throw new Error('Unable to resolve Closure deps');
+  }
+
+  require(googDepsPath);
 };
 
 
@@ -804,6 +812,7 @@ const sortModuleRequires = root => {
  * Get all global references under a root node starting with a specified namespace.
  * @param {Node} root The root node.
  * @param {string} baseNs The base namespace to search for.
+ * @return {!Array<string>} The global references, sorted in descending order.
  */
 const getGlobalRefs = (root, baseNs) => {
   const memberExpressions = new Set();
@@ -813,7 +822,9 @@ const getGlobalRefs = (root, baseNs) => {
       name: baseNs
     }
   }).forEach((path) => {
-    while (path.parent.value.type === jscs.MemberExpression.name && !path.parent.value.computed) {
+    while (path.parent.value.type === 'MemberExpression'
+        && !path.parent.value.computed
+        && path.parent.value.property.name !== 'prototype') {
       path = path.parent;
     }
 

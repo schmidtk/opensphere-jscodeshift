@@ -2,7 +2,15 @@ const fs = require('fs');
 const jscs = require('jscodeshift');
 const jscsUtils = require('./jscs');
 const {addVarName} = require('./ast');
-const {replaceLegacyRequire} = require('./goog');
+const {
+  isKarmaTest,
+  getDependency,
+  getGlobalRefs,
+  replaceSrcGlobals,
+  replaceTestGlobals,
+  replaceLegacyRequire
+} = require('./goog');
+const {logger} = require('./logger');
 
 
 /**
@@ -20,6 +28,38 @@ let OSGlobalTransformConfig;
  * @type {Object<String, OSGlobalTransformConfig>}
  */
 let osGlobals_ = {};
+
+/**
+ * Root namespaces that should be detected for global references.
+ * @type {Array<string>}
+ */
+let globalRootNamespaces = [];
+
+/**
+ * Modules that should not be assigned a global reference.
+ * @type {Array<string>}
+ */
+let moduleBlacklist = [];
+
+/**
+ * Add modules to the global reference blacklist.
+ * @param {Array<string>} modules The modules.
+ */
+const addBlacklistModules = (modules) => {
+  if (modules && modules.length) {
+    moduleBlacklist = [...new Set(moduleBlacklist.concat(modules))];
+  }
+};
+
+/**
+ * Add root namespaces to be detected for global references.
+ * @param {Array<string>} namespaces The namespaces.
+ */
+const addGlobalRootNamespaces = (namespaces) => {
+  if (namespaces && namespaces.length) {
+    globalRootNamespaces = [...new Set(globalRootNamespaces.concat(namespaces))];
+  }
+};
 
 /**
  * Utility function to update/append globals from command-line configs
@@ -48,6 +88,32 @@ const isOSGlobal = (node) => {
  */
 const isOSGlobalKey = (key) => {
   return (!!osGlobals_[key]);
+};
+
+/**
+ * Convert global references in a file.
+ * @param {NodePath} root The root node path.
+ */
+const convertGlobalRefs = (root) => {
+  globalRootNamespaces.forEach((ns) => {
+    getGlobalRefs(root, ns).forEach((globalRef) => {
+      const dependency = getDependency(globalRef, true);
+      if (dependency && dependency.moduleName) {
+        if (moduleBlacklist.includes(dependency.moduleName)) {
+          // Ignore modules in the blacklist.
+          return;
+        }
+
+        if (isKarmaTest(root)) {
+          replaceTestGlobals(root, dependency.moduleName);
+        } else {
+          replaceSrcGlobals(root, dependency.moduleName);
+        }
+      } else {
+        logger.warn(`Unable to locate module for global reference ${globalRef}`);
+      }
+    });
+  });
 };
 
 /**
@@ -81,6 +147,15 @@ const convertOSGlobal = (root, path, modules) => {
         if (config.globals) {
           addOSGlobals(config.globals);
         }
+
+        if (config.globalRootNamespaces) {
+          addGlobalRootNamespaces(config.globalRootNamespaces);
+        }
+
+        if (config.moduleBlacklist) {
+          addBlacklistModules(config.moduleBlacklist);
+        }
+
         if (config.moduleVarNames) {
           for (const key in config.moduleVarNames) {
             addVarName(key, config.moduleVarNames[key]);
@@ -96,6 +171,7 @@ module.exports = {
   addOSGlobals,
   isOSGlobal,
   isOSGlobalKey,
+  convertGlobalRefs,
   convertOSGlobal,
   OSGlobalTransformConfig
 };
