@@ -13,7 +13,7 @@ const {
   replaceInComments
 } = require('./ast');
 
-const {createCall} = require('./jscs');
+const {createCall, memberExpressionToString} = require('./jscs');
 const {logger} = require('./logger');
 
 /**
@@ -43,14 +43,16 @@ const dependencies = {};
  *     and values include {'module': 'goog'} and {'lang': 'es6'}.
  */
 const addDependency = (path, provides, requires, loadFlags = {}) => {
-  if (provides && provides.length === 1 && loadFlags.module) {
-    const moduleName = provides[0];
-    if (!dependencies[moduleName]) {
-      dependencies[moduleName] = {
-        moduleType: loadFlags.module,
-        path: path.replace(/^(\.\.\/)*(workspace\/)?/, '')
-      };
-    }
+  if (provides && provides.length) {
+    provides.forEach((moduleName) => {
+      if (!dependencies[moduleName]) {
+        dependencies[moduleName] = {
+          moduleName,
+          moduleType: loadFlags.module,
+          path: path.replace(/^(\.\.\/)*(workspace\/)?/, '')
+        };
+      }
+    });
   }
 };
 
@@ -61,9 +63,24 @@ global.goog = {addDependency};
 /**
  * Get the dependency info for a module.
  * @param {string} moduleName The module name.
+ * @param {boolean} searchParents If parent modules should be searched, defaults to false.
  * @return {Object|undefined} The dependency, or undefined if not loaded.
  */
-const getDependency = (moduleName) => dependencies[moduleName];
+const getDependency = (moduleName, searchParents = false) => {
+  let dep = dependencies[moduleName]
+  if (!dep && searchParents) {
+    const parts = moduleName.split('.');
+
+    while (!dep && parts.length > 1) {
+      parts.pop();
+
+      const parentModule = parts.join('.');
+      dep = dependencies[parentModule];
+    }
+  }
+
+  return dep;
+};
 
 
 /**
@@ -236,7 +253,7 @@ const isGoogModuleRequireType = node => {
 
 
 /**
- * If a node is a `goog.array.find` call.
+ * If a node is a `goog.require` call.
  * @param {Node} node The node.
  * @return {boolean}
  */
@@ -246,7 +263,17 @@ const isGoogRequire = node => {
 
 
 /**
- * If a node is a `goog.array.find` call.
+ * If a node is a `goog.module.get` call.
+ * @param {Node} node The node.
+ * @return {boolean}
+ */
+const isGoogModuleGet = node => {
+  return isCall(node, 'goog.module.get');
+};
+
+
+/**
+ * If a node is a `goog.provide` call.
  * @param {Node} node The node.
  * @return {boolean}
  */
@@ -333,6 +360,43 @@ const isPrivate = (node) => {
 };
 
 
+const isKarmaDescribe = (node) => {
+  return node?.callee?.name === 'describe' && node?.arguments.length >= 2 && node.arguments[0].type === 'Literal';
+};
+
+
+/**
+ * If the root node is for a Karma test file.
+ * @param {Node} root The root node.
+ * @return {boolean} If this is a test file.
+ */
+const isKarmaTest = (root) => {
+  // Check that there is a describe call in the Program body.
+  const nodes = root.find(jscs.CallExpression, isKarmaDescribe);
+  return nodes.some((node) => node?.parent?.parent?.value?.type === 'Program');
+};
+
+
+/**
+ * Get the root Karma describe above a node.
+ * @param {NodePath} path The starting path.
+ * @return {NodePath|undefined} The root describe, or undefined if not found.
+ */
+const getRootDescribe = (path) => {
+  let rootDescribe;
+
+  let currentPath = path;
+  while (currentPath.parent && currentPath.parent !== currentPath) {
+    currentPath = currentPath.parent;
+    if (isKarmaDescribe(currentPath.value)) {
+      rootDescribe = currentPath;
+    }
+  }
+
+  return rootDescribe;
+};
+
+
 /**
  * Add a goog.require statement if it doesn't already exist.
  * @param {Node} root The root node.
@@ -357,6 +421,43 @@ const addRequire = (root, toAdd) => {
         break;
       }
     }
+  }
+};
+
+
+/**
+ * Add a goog.module.get statement if it doesn't already exist.
+ * @param {Node} root The root node.
+ * @param {string} moduleName The module name.
+ * @param {string} varName The variable name to assign to.
+ */
+const addGoogModuleGet = (root, moduleName, varName) => {
+  const existing = jscs(root).find(jscs.CallExpression,
+      (path) => isGoogModuleGet(path) && path.arguments[0].value === moduleName);
+  if (existing.length) {
+    const varDeclarator = existing.get().parent.value;
+    if (varDeclarator.id.type === 'Identifier') {
+      return varDeclarator.id;
+    } else if (varDeclarator.id.type === 'ObjectPattern') {
+      const props = varDeclarator.id.properties;
+      const defaultProp = props.find((p) => p.key.name === 'default');
+      if (defaultProp) {
+        return defaultProp.value;
+      } else {
+        const varIdentifier = jscs.identifier(varName);
+        props.push(jscs.property('init', jscs.identifier('default'), varIdentifier));
+        return varIdentifier;
+      }
+    }
+  } else {
+    const describeBody = root.value.arguments[1].body.body;
+    const call = createCall('goog.module.get', [jscs.literal(moduleName)]);
+    const varIdentifier = jscs.identifier(varName);
+    const varDeclarator = jscs.variableDeclarator(varIdentifier, call);
+    const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
+    describeBody.splice(0, 0, varDeclaration);
+
+    return varIdentifier;
   }
 };
 
@@ -699,32 +800,126 @@ const sortModuleRequires = root => {
 };
 
 
+/**
+ * Get all global references under a root node starting with a specified namespace.
+ * @param {Node} root The root node.
+ * @param {string} baseNs The base namespace to search for.
+ */
+const getGlobalRefs = (root, baseNs) => {
+  const memberExpressions = new Set();
+
+  root.find(jscs.MemberExpression, {
+    object: {
+      name: baseNs
+    }
+  }).forEach((path) => {
+    while (path.parent.value.type === jscs.MemberExpression.name && !path.parent.value.computed) {
+      path = path.parent;
+    }
+
+    memberExpressions.add(memberExpressionToString(path.value));
+  });
+
+  return [...memberExpressions].sort((a, b) => a > b ? -1 : a < b ? 1 : 0);
+}
+
+
+/**
+ * Replace global references to a module within a source file.
+ * @param {Node} root The root node.
+ * @param {string} moduleName The module name.
+ */
+const replaceSrcGlobals = (root, moduleName) => {
+  // Add a goog.require statement then replace it with goog.module syntax.
+  addRequire(root, moduleName);
+  replaceLegacyRequire(root, moduleName);
+};
+
+
+/**
+ * Replace global references to a module within a test file.
+ * @param {Node} root The root node.
+ * @param {string} moduleName The module name.
+ */
+const replaceTestGlobals = (root, moduleName) => {
+  // Add a goog.require statement for the module, if needed.
+  addRequire(root, moduleName);
+
+  // Reuse the assigned identifier if it's within the same describe() call.
+  let assignedId;
+  let lastDescribe;
+
+  let instances;
+  if (moduleName.indexOf('.') > -1) {
+    instances = root.find(jscs.MemberExpression, createFindMemberExprObject(moduleName));
+  } else {
+    instances = root.find(jscs.Identifier, {name: moduleName});
+  }
+
+  // Find all instances of the global reference.
+  instances.forEach((path) => {
+    // Get the root describe() call, so we can find/create a goog.module.get statement for the module.
+    const rootDescribe = getRootDescribe(path);
+    if (rootDescribe) {
+      // Get a unique variable name to assign the goog.module.get.
+      const varName = getUniqueVarName(root, moduleName);
+
+      // Find or create a goog.module.get statement for the module. If an existing gmg is found, this will
+      // return the existing identifier for the module.
+      if (!assignedId || rootDescribe !== lastDescribe) {
+        lastDescribe = rootDescribe;
+        assignedId = addGoogModuleGet(rootDescribe, moduleName, varName);
+      }
+
+      // If an identifier was returned, replace the global reference. If not, skip it and inform the user.
+      if (assignedId && assignedId.type === 'Identifier') {
+        jscs(path).replaceWith(assignedId);
+      } else {
+        logger.warn(`Couldn't reuse existing goog.module get for global reference to ${moduleName}`);
+      }
+    } else {
+      // Couldn't find a root describe call, manual intervention needed.
+      assignedId = undefined;
+      lastDescribe = undefined;
+
+      logger.warn(`Couldn't find root describe() for global reference to ${moduleName}`);
+    }
+  });
+};
+
+
 module.exports = {
   addDependency,
-  getDependency,
-  loadDeps,
   addExports,
+  addGoogModuleGet,
   addRequire,
+  getDependency,
+  getGlobalRefs,
   getGoogModuleExports,
+  getRootDescribe,
+  getTempModuleName,
+  isClosureClass,
+  isConst,
+  isControllerClass,
+  isDefaultExport,
+  isDirective,
   isGoogDeclareLegacyNamespace,
   isGoogDefine,
   isGoogModule,
-  isGoogProvide,
-  isGoogRequire,
   isGoogModuleRequire,
   isGoogModuleRequireType,
-  isClosureClass,
-  isControllerClass,
-  isDirective,
+  isGoogProvide,
+  isGoogRequire,
   isInterface,
-  isConst,
+  isKarmaTest,
   isPrivate,
+  loadDeps,
   removeLegacyNamespace,
   replaceLegacyRequire,
-  getTempModuleName,
-  isDefaultExport,
   replaceModuleExportsWithEs6,
   replaceModuleWithDeclareModuleId,
-  sortRequires,
-  sortModuleRequires
+  replaceSrcGlobals,
+  replaceTestGlobals,
+  sortModuleRequires,
+  sortRequires
 };

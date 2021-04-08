@@ -92,22 +92,19 @@ const createFindMemberExprObject = (memberPath) => {
 
 
 /**
- * Create a var name from a list of parts.
- * @param {!Array<string>} parts The parts. These will be combined in camelcase.
- * @param {string|undefined} prefix The prefix to add.
- * @param {string|undefined} suffix The suffix to add.
- * @return {string} The var name.
+ * Map of module names to the variable that should be assigned to the exports.
+ * @type {Object<string, string>}
  */
-const getVarName = (parts, prefix, suffix) => {
-  prefix = prefix || '';
-  suffix = suffix || '';
+const varNames = {};
 
-  //
-  // If only one part is provided, use it. Otherwise combine them in camelcase.
-  //
-  const baseName = parts.length === 1 ? parts[0] : camelcase(parts.join('-'));
 
-  return `${prefix}${baseName}${suffix}`;
+/**
+ * Register a variable name to use for a module.
+ * @param {string} moduleName The module.
+ * @param {string} varName The variable name.
+ */
+const addVarName = (moduleName, varName) => {
+  varNames[moduleName] = varName;
 };
 
 
@@ -115,25 +112,32 @@ const getVarName = (parts, prefix, suffix) => {
  * Get a unique variable name to use within the scope of the provided path.
  * @param {NodePath} root The scope's node path.
  * @param {string} originalName The original dot-delimited name.
- * @param {string|undefined} prefix Prefix for the variable name.
+ * @param {string|undefined} prefix Prefix for the variable name, defaults to an empty string.
  * @return {string} The variable name.
  */
-const getUniqueVarName = (root, originalName, prefix) => {
-  const moduleParts = originalName.split('.');
-  prefix = prefix || '';
+const getUniqueVarName = (root, originalName, prefix = '') => {
+  let varName;
 
-  // try the last part of the module name first
-  let varName = `${prefix}${moduleParts[moduleParts.length - 1]}`;
+  if (varNames[originalName]) {
+    // module has a configured var name, so use that
+    varName = `${prefix}${varNames[originalName]}`;
+  } else {
+    const moduleParts = originalName.split('.');
 
-  // camelcase the parts
-  if (!varName || hasVar(root, varName)) {
-    varName = getVarName(moduleParts, prefix);
+    // try the last part of the module name first
+    varName = `${prefix}${moduleParts[moduleParts.length - 1]}`;
+
+    // if the name is empty or already exists, combine the module path using camel case
+    if ((!varName || hasVar(root, varName)) && moduleParts.length > 1) {
+      varName = `${prefix}${camelcase(moduleParts.join('-'))}`;
+    }
   }
 
-  // add a counter until a unique name is found
+  // if the symbol is already in use, add a one-up counter until a unique name is found
+  const baseName = varName;
   let i = 1;
   while (hasVar(root, varName)) {
-    varName = getVarName(moduleParts, prefix, i++);
+    varName = `${baseName}${i++}`;
   }
 
   return varName;
@@ -251,6 +255,7 @@ const replaceFunctionExpressionWithArrow = (node) => {
 
 
 module.exports = {
+  addVarName,
   copyComments,
   createFindCallFn,
   createFindMemberExprObject,
