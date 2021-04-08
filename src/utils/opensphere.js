@@ -95,6 +95,16 @@ const isOSGlobalKey = (key) => {
  * @param {NodePath} root The root node path.
  */
 const convertGlobalRefs = (root) => {
+  const isTestFile = isKarmaTest(root);
+
+  // In source files, first replace OS globals because they may otherwise be detected under the wrong module.
+  // This is not yet supported in tests.
+  if (!isTestFile) {
+    root.find(jscs.MemberExpression, isOSGlobal).forEach(path => {
+      convertOSGlobal(root, path);
+    });
+  }
+
   globalRootNamespaces.forEach((ns) => {
     getGlobalRefs(root, ns).forEach((globalRef) => {
       const dependency = getDependency(globalRef, true);
@@ -104,7 +114,9 @@ const convertGlobalRefs = (root) => {
           return;
         }
 
-        if (isKarmaTest(root)) {
+        // Test files use a legacy goog.require with goog.module.get to actually reference the module, so they need to
+        // be handled differently.
+        if (isTestFile) {
           replaceTestGlobals(root, dependency.moduleName);
         } else {
           replaceSrcGlobals(root, dependency.moduleName);
