@@ -103,19 +103,9 @@ const printSource = (root) => {
   output = output.replace(/goog\.module\.declareLegacyNamespace\(\);[\n]*/, `goog.module.declareLegacyNamespace();${linesAfterLegacyNs}`);
 
   // add two blank lines between the last require and the rest of the content
-  if (lastRequire > -1) {
-    const nextNewline = output.indexOf('\n', lastRequire);
-    if (nextNewline > -1) {
-      const before = output.slice(0, nextNewline).trim();
-      const after = output.slice(nextNewline).trim();
-      const linesAfterLastRequire = lastRequireType > -1 ? '\n\n' : '\n\n\n';
-      output = `${before}${linesAfterLastRequire}${after}`;
-    }
-  }
-
-  // add two blank lines between the last require and the rest of the content
-  if (lastRequireType > -1) {
-    const nextNewline = output.indexOf('\n', lastRequireType);
+  const lastIndex = Math.max(lastRequire, lastRequireType);
+  if (lastIndex > -1) {
+    const nextNewline = output.indexOf('\n', lastIndex);
     if (nextNewline > -1) {
       const before = output.slice(0, nextNewline).trim();
       const after = output.slice(nextNewline).trim();
@@ -124,7 +114,7 @@ const printSource = (root) => {
   }
 
   // drop extra newline between imports and trailing comma in named imports
-  output = output.replace('\n\nimport', '\nimport');
+  output = output.replace('\';\n\nimport', '\';\nimport');
   output = output.replace(',\n} from', '\n} from');
 
   // add trailing newline

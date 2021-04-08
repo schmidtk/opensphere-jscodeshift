@@ -6,9 +6,8 @@ const ParentClass = goog.require('os.ns.ParentClass');
 const SomeType1 = goog.require('os.ns.SomeType1');
 const os2 = goog.requireType('os2');
 const SomeType2 = goog.requireType('os.ns.SomeType2');
-
-
 goog.require('notReferencedPleaseRemove');
+
 
 goog.require('os.ns.NotReferencedPleaseRemove');
 

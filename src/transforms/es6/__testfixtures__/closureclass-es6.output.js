@@ -10,6 +10,7 @@ const SomeType2 = goog.requireType('os.ns.SomeType2');
 goog.require('notReferencedPleaseRemove');
 goog.require('os.ns.NotReferencedPleaseRemove');
 
+
 /**
  * Class description.
  *

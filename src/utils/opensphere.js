@@ -123,9 +123,8 @@ const convertGlobalRefs = (root) => {
  *
  * @param {NodePath} root The root node path.
  * @param {NodePath} path The node path.
- * @param {!Array<string>} modules Modules detected in the file.
  */
-const convertOSGlobal = (root, path, modules) => {
+const convertOSGlobal = (root, path) => {
   const key = jscsUtils.memberExpressionToString(path.value);
   const config = osGlobals_[key];
 

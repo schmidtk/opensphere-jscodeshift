@@ -154,7 +154,7 @@ module.exports = (file, api, options) => {
   // convert opensphere globals (implicit dependencies) AFTER module conversions:
   // this avoids issues with path.to.MyModule (should already be replaced) conflicting with path.to.globalFunction
   root.find(jscs.MemberExpression, isOSGlobal).forEach(path => {
-    convertOSGlobal(root, path, modules);
+    convertOSGlobal(root, path);
   });
 
   sortModuleRequires(root);
