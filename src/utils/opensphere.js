@@ -3,13 +3,13 @@ const jscs = require('jscodeshift');
 const jscsUtils = require('./jscs');
 const {addVarName} = require('./ast');
 const {
-  isKarmaTest,
   getDependency,
   getGlobalRefs,
   replaceSrcGlobals,
   replaceTestGlobals,
   replaceLegacyRequire
 } = require('./goog');
+const {isKarmaTest} = require('./karma');
 const {logger} = require('./logger');
 
 

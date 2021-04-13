@@ -1,5 +1,6 @@
 const jscs = require('jscodeshift');
 const {createFindCallFn} = require('./ast');
+const {isKarmaTest} = require('./karma');
 const {getDefaultSourceOptions} = require('./options');
 
 /**
@@ -95,27 +96,29 @@ const replaceFunction = (root, options) => {
 const printSource = (root) => {
   let output = root.toSource(getDefaultSourceOptions()).trim();
 
-  const lastRequire = output.lastIndexOf('goog.require(\'');
-  const lastRequireType = output.lastIndexOf('goog.requireType(\'');
+  if (!isKarmaTest(root)) {
+    const lastRequire = output.lastIndexOf('goog.require(\'');
+    const lastRequireType = output.lastIndexOf('goog.requireType(\'');
 
-  // after the legacy namespace call, add one blank line if there are require statements, two blank lines if not
-  const linesAfterLegacyNs = lastRequire > -1 || lastRequireType > -1 ? '\n\n' : '\n\n\n';
-  output = output.replace(/goog\.module\.declareLegacyNamespace\(\);[\n]*/, `goog.module.declareLegacyNamespace();${linesAfterLegacyNs}`);
+    // after the legacy namespace call, add one blank line if there are require statements, two blank lines if not
+    const linesAfterLegacyNs = lastRequire > -1 || lastRequireType > -1 ? '\n\n' : '\n\n\n';
+    output = output.replace(/goog\.module\.declareLegacyNamespace\(\);[\n]*/, `goog.module.declareLegacyNamespace();${linesAfterLegacyNs}`);
 
-  // add two blank lines between the last require and the rest of the content
-  const lastIndex = Math.max(lastRequire, lastRequireType);
-  if (lastIndex > -1) {
-    const nextNewline = output.indexOf('\n', lastIndex);
-    if (nextNewline > -1) {
-      const before = output.slice(0, nextNewline).trim();
-      const after = output.slice(nextNewline).trim();
-      output = `${before}\n\n\n${after}`;
+    // add two blank lines between the last require and the rest of the content
+    const lastIndex = Math.max(lastRequire, lastRequireType);
+    if (lastIndex > -1) {
+      const nextNewline = output.indexOf('\n', lastIndex);
+      if (nextNewline > -1) {
+        const before = output.slice(0, nextNewline).trim();
+        const after = output.slice(nextNewline).trim();
+        output = `${before}\n\n\n${after}`;
+      }
     }
-  }
 
-  // drop extra newline between imports and trailing comma in named imports
-  output = output.replace('\';\n\nimport', '\';\nimport');
-  output = output.replace(',\n} from', '\n} from');
+    // drop extra newline between imports and trailing comma in named imports
+    output = output.replace('\';\n\nimport', '\';\nimport');
+    output = output.replace(',\n} from', '\n} from');
+  }
 
   // add trailing newline
   return `${output}\n`;
