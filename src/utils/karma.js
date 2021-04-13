@@ -20,12 +20,13 @@ const getRootDescribe = (path) => {
 };
 
 /**
- * If the node is a Karma describe() call.
+ * If the node is a Karma describe() call. Also matches xdescribe and ddescribe variants.
  * @param {Node} node The node.
  * @return {boolean} If the node is a Karma describe() call.
  */
 const isKarmaDescribe = (node) => {
-  return node?.callee?.name === 'describe' && node?.arguments.length >= 2 && node.arguments[0].type === 'Literal';
+  return /$[xd]?describe$/.test(node?.callee?.name) === 'describe' &&
+      node?.arguments.length >= 2 && node.arguments[0].type === 'Literal';
 };
 
 /**

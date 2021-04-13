@@ -129,10 +129,11 @@ module.exports = (file, api, options) => {
   const unusedRequires = [];
   requireStatements.paths().reverse();
   requireStatements.forEach(path => {
-    if (path.parent.value.type === 'Program' && !isOSGlobalKey(path.value.expression.arguments[0].value)) {
-      const unusedRequire = replaceLegacyRequire(root, path.value.expression.arguments[0].value);
-      if (unusedRequire) {
-        unusedRequires.push(unusedRequire);
+    const requireVarName = path.value.expression.arguments[0].value;
+    if (path.parent.value.type === 'Program' && !isOSGlobalKey(requireVarName)) {
+      const replacedIdentifier = replaceLegacyRequire(root, requireVarName);
+      if (!replacedIdentifier) {
+        unusedRequires.push(requireVarName);
       }
     }
   });

@@ -272,6 +272,16 @@ const isGoogRequire = node => {
 
 
 /**
+ * If a node is a `goog.require` call.
+ * @param {Node} node The node.
+ * @return {boolean}
+ */
+const isGoogRequireCall = node => {
+  return node.type === 'CallExpression' && isCall(node, 'goog.require');
+};
+
+
+/**
  * If a node is a `goog.module.get` call.
  * @param {Node} node The node.
  * @return {boolean}
@@ -369,7 +379,31 @@ const isPrivate = (node) => {
 };
 
 
+/**
+ * Get the default export identifier from a var declaration assigned from a goog.require or goog.module.get.
+ * @param {VariableDeclarator} varDecl The VariableDeclarator node.
+ * @param {?string=} varName The name to use if a default export needs to be added.
+ * @return {Identifier} The Identifier for the default export, or null if not found.
+ */
+const getDefaultExportId = (varDecl, varName = null) => {
+  if (varDecl && varDecl.id) {
+    if (varDecl.id.type === 'Identifier') {
+      return varDecl.id;
+    } else if (varDecl.id.type === 'ObjectPattern') {
+      const props = varDecl.id.properties;
+      const defaultProp = props.find((p) => p.key.name === 'default');
+      if (defaultProp) {
+        return defaultProp.value;
+      } else if (varName) {
+        const varIdentifier = jscs.identifier(varName);
+        props.push(jscs.property('init', jscs.identifier('default'), varIdentifier));
+        return varIdentifier;
+      }
+    }
+  }
 
+  return null;
+};
 
 
 /**
@@ -406,24 +440,61 @@ const addRequire = (root, toAdd) => {
  * @param {string} moduleName The module name.
  * @param {string} varName The variable name to assign to.
  */
+const addModuleRequire = (root, moduleName, varName) => {
+  let varIdentifier = null;
+
+  // Search for goog.require('<moduleName>') calls. These can be either legacy or module-type requires.
+  const existing = root.find(jscs.CallExpression,
+      (path) => isGoogRequireCall(path) && path.arguments[0].value === moduleName);
+  if (existing.length) {
+    const requireCall = existing.get();
+    if (requireCall.parent.value.type === 'ExpressionStatement') {
+      // If the parent is an ExpressionStatement, this is a legacy require. Remove it and we'll add a module-type
+      // require below.
+      jscs(requireCall.parent).remove();
+    } else {
+      // Module in a VariableDeclarator, get/create the default export identifier.
+      const varDeclarator = requireCall.parent.value;
+      varIdentifier = getDefaultExportId(varDeclarator, varName);
+    }
+  }
+
+  if (!varIdentifier) {
+    // No module-type require was found, create one.
+    varIdentifier = jscs.identifier(varName);
+
+    const program = root.find(jscs.Program).get();
+    const programBody = program.value.body;
+    for (let i = 0; i < programBody.length; i++) {
+      const current = programBody[i];
+      if (!isGoogModule(current) && !isGoogDeclareLegacyNamespace(current) && !isGoogProvide(current) &&
+          !isGoogRequire(current)) {
+        const call = createCall('goog.require', [jscs.literal(moduleName)]);
+        const varDeclarator = jscs.variableDeclarator(varIdentifier, call);
+        const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
+        programBody.splice(i, 0, varDeclaration);
+
+        break;
+      }
+    }
+  }
+
+  return varIdentifier;
+};
+
+
+/**
+ * Add a goog.module.get statement if it doesn't already exist.
+ * @param {Node} root The root node.
+ * @param {string} moduleName The module name.
+ * @param {string} varName The variable name to assign to.
+ */
 const addGoogModuleGet = (root, moduleName, varName) => {
   const existing = jscs(root).find(jscs.CallExpression,
       (path) => isGoogModuleGet(path) && path.arguments[0].value === moduleName);
   if (existing.length) {
     const varDeclarator = existing.get().parent.value;
-    if (varDeclarator.id.type === 'Identifier') {
-      return varDeclarator.id;
-    } else if (varDeclarator.id.type === 'ObjectPattern') {
-      const props = varDeclarator.id.properties;
-      const defaultProp = props.find((p) => p.key.name === 'default');
-      if (defaultProp) {
-        return defaultProp.value;
-      } else {
-        const varIdentifier = jscs.identifier(varName);
-        props.push(jscs.property('init', jscs.identifier('default'), varIdentifier));
-        return varIdentifier;
-      }
-    }
+    return getDefaultExportId(varDeclarator, varName);
   } else {
     const describeBody = root.value.arguments[1].body.body;
     const call = createCall('goog.module.get', [jscs.literal(moduleName)]);
@@ -443,7 +514,7 @@ const addGoogModuleGet = (root, moduleName, varName) => {
  * @param {string} toReplace The str to replace.
  * @param {?string} toReplaceAlt The str to require.
  * @param {?boolean} singleton if true, include getInstance() in call
- * @return {?string} The legacy require namespace, or null if replaced.
+ * @return {Identifier} The Identifier assigned to the require, or null if not found.
  */
 const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton) => {
   // remove existing goog.require calls for the module
@@ -470,7 +541,7 @@ const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton) => {
     requireCall = 'requireType';
   } else {
     // bail if the module isn't referenced in the file
-    return toReplace;
+    return null;
   }
 
   // create a variable name that doesn't shadow any local vars
@@ -479,7 +550,8 @@ const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton) => {
   // create the variable declaration
   const callee = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier(requireCall));
   const call = jscs.callExpression(callee, [jscs.literal(toReplaceAlt || toReplace)]);
-  const varDeclarator = jscs.variableDeclarator(jscs.identifier(varName), call);
+  const varIdentifier = jscs.identifier(varName);
+  const varDeclarator = jscs.variableDeclarator(varIdentifier, call);
   const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
 
   // insert the declaration after goog.module and legacy goog.require statements
@@ -493,7 +565,7 @@ const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton) => {
     }
   }
 
-  let replaceWith = jscs.identifier(varName);
+  let replaceWith = varIdentifier;
 
   // add .getInstance() if needed for the in-line replacements
   if (singleton === true) {
@@ -508,7 +580,7 @@ const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton) => {
   // replace references in comments
   replaceInComments(root, toReplace, varName);
 
-  return null;
+  return varIdentifier;
 };
 
 
@@ -798,8 +870,8 @@ const getGlobalRefs = (root, baseNs) => {
     memberExpressions.add(memberExpressionToString(path.value));
   });
 
-  return [...memberExpressions].sort((a, b) => a > b ? -1 : a < b ? 1 : 0);
-}
+  return [...memberExpressions];
+};
 
 
 /**
@@ -809,8 +881,21 @@ const getGlobalRefs = (root, baseNs) => {
  */
 const replaceSrcGlobals = (root, moduleName) => {
   // Add a goog.require statement then replace it with goog.module syntax.
-  addRequire(root, moduleName);
-  replaceLegacyRequire(root, moduleName);
+  const varName = getUniqueVarName(root, moduleName);
+  const assignedId = addModuleRequire(root, moduleName, varName);
+  if (assignedId) {
+    let instances;
+    if (moduleName.indexOf('.') > -1) {
+      instances = root.find(jscs.MemberExpression, createFindMemberExprObject(moduleName));
+    } else {
+      instances = root.find(jscs.Identifier, {name: moduleName});
+    }
+
+    // Find all instances of the global reference.
+    instances.forEach((path) => {
+      jscs(path).replaceWith(assignedId);
+    });
+  }
 };
 
 
@@ -870,6 +955,7 @@ module.exports = {
   addDependency,
   addExports,
   addGoogModuleGet,
+  addModuleRequire,
   addRequire,
   getDependency,
   getGlobalRefs,
