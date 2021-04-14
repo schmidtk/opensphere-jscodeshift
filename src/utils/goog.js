@@ -196,6 +196,16 @@ const getGoogModuleExports = (root) => {
 
 
 /**
+ * If a node is a `goog.declareModuleId` call.
+ * @param {Node} node The node.
+ * @return {boolean}
+ */
+const isGoogDeclareModuleId = node => {
+  return node.type === 'ExpressionStatement' && isCall(node.expression, 'goog.declareModuleId');
+};
+
+
+/**
  * If a node is a `goog.module.declareLegacyNamespace` call.
  * @param {Node} node The node.
  * @return {boolean}
@@ -467,8 +477,18 @@ const addModuleRequire = (root, moduleName, varName) => {
     const programBody = program.value.body;
     for (let i = 0; i < programBody.length; i++) {
       const current = programBody[i];
-      if (!isGoogModule(current) && !isGoogDeclareLegacyNamespace(current) && !isGoogProvide(current) &&
-          !isGoogRequire(current)) {
+      //
+      // Insert after:
+      //   - goog.declareModuleId
+      //   - import
+      //   - goog.module
+      //   - goog.module.declareLegacyNamespace
+      //   - goog.provide
+      //   - goog.require
+      //
+      if (!isGoogDeclareModuleId(current) && current.type !== 'ImportDeclaration' &&
+          !isGoogModule(current) && !isGoogDeclareLegacyNamespace(current) &&
+          !isGoogProvide(current) && !isGoogRequire(current)) {
         const call = createCall('goog.require', [jscs.literal(moduleName)]);
         const varDeclarator = jscs.variableDeclarator(varIdentifier, call);
         const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
