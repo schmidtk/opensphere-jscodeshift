@@ -120,8 +120,6 @@ const convertGlobalRefs = (root) => {
         .sort((a, b) => a.moduleName > b.moduleName ? -1 : a.moduleName < b.moduleName ? 1 : 0);
 
     globalDeps.forEach((dependency) => {
-      logger.info(`Replacing globals for ${dependency.moduleName}`);
-
       if (dependency && dependency.moduleName) {
         // Test files use a legacy goog.require with goog.module.get to actually reference the module, so they need to
         // be handled differently.
