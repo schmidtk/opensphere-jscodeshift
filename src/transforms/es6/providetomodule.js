@@ -1,7 +1,15 @@
 const jscs = require('jscodeshift');
 const {createFindMemberExprObject} = require('../../utils/ast');
 const {memberExpressionToString, printSource} = require('../../utils/jscs');
-const {convertGoogDefine, convertNamespaceExpression, convertClass, convertDirective, convertInterface, replaceProvidesWithModules, replaceUIModules} = require('../../utils/classes');
+const {
+  convertGoogDefine,
+  convertNamespaceExpression,
+  convertClass,
+  convertDirective,
+  convertInterface,
+  replaceProvidesWithModules,
+  replaceUIModules
+} = require('../../utils/classes');
 const {addRequire, isClosureClass, isControllerClass, isDirective, isGoogDefine, isGoogRequire, isInterface, replaceLegacyRequire, sortModuleRequires} = require('../../utils/goog');
 const {createAssignmentShim, createUIShim} = require('../../utils/shim');
 const {logger} = require('../../utils/logger');

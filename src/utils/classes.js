@@ -49,6 +49,12 @@ const CONTROLLER_NAME = 'Controller';
 const DIRECTIVE_NAME = 'directive';
 
 /**
+ * Property name to assign directive functions.
+ * @type {string}
+ */
+const DIRECTIVE_TAG_NAME = 'directiveTag';
+
+/**
  * Adds a method to a class.
  */
 const addMethodToClass = (moduleName, methodName, methodValue, isStatic, kind) => {
@@ -411,6 +417,26 @@ const convertDirective = (root, path, moduleName) => {
       .forEach(path => jscs(path).replaceWith(jscs.identifier(DIRECTIVE_NAME)));
 
   addExports(root, DIRECTIVE_NAME);
+
+  const directiveCalls = root.find(jscs.CallExpression, (node) => {
+    return node?.callee?.property?.name === 'directive' &&
+        node.arguments.length === 2 &&
+        node.arguments[0]?.type === 'Literal';
+  });
+
+  if (directiveCalls.length === 1) {
+    const directiveCall = directiveCalls.get().value;
+    const directiveName = directiveCall.arguments[0].value;
+
+    directiveCall.arguments[0] = jscs.identifier(DIRECTIVE_TAG_NAME);
+
+    const tagDeclarator = jscs.variableDeclarator(jscs.identifier(DIRECTIVE_TAG_NAME), jscs.literal(directiveName));
+    const tagDeclaration = jscs.variableDeclaration('const', [tagDeclarator]);
+    tagDeclaration.comments = [jscs.commentBlock('*\n * The element tag for the directive.\n * @type {string}\n ')];
+    jscs(path.parent).insertAfter(tagDeclaration);
+
+    addExports(root, DIRECTIVE_TAG_NAME);
+  }
 };
 
 /**

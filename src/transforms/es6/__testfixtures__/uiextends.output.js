@@ -17,11 +17,17 @@ const directive = () => {
   return directive;
 };
 
+/**
+ * The element tag for the directive.
+ * @type {string}
+ */
+const directiveTag = 'my-component';
+
 
 /**
  * Add the directive to the module
  */
-Module.directive('my-component', [directive]);
+Module.directive(directiveTag, [directive]);
 
 
 /**
@@ -153,5 +159,6 @@ Controller.prototype.overrideToExpression = goog.nullFunction;
 
 exports = {
   Controller,
-  directive
+  directive,
+  directiveTag
 };

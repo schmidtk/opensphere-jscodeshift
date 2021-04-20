@@ -17,9 +17,19 @@ const directive = () => ({
   controllerAs: 'ctrl'
 });
 
+/**
+ * The element tag for the directive.
+ * @type {string}
+ */
+const directiveTag = 'my-component';
+
 
 /**
  * Add the directive to the module
  */
-Module.directive('my-component', [directive]);
-exports = directive;
+Module.directive(directiveTag, [directive]);
+
+exports = {
+  directive,
+  directiveTag
+};
