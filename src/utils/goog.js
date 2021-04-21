@@ -434,6 +434,20 @@ const getDefaultExportId = (varDecl, varName = null) => {
  * @param {string} toAdd The require to add.
  */
 const addRequire = (root, toAdd) => {
+  if (isGoogModuleFile(root)) {
+    replaceSrcGlobals(root, toAdd);
+  } else {
+    addLegacyRequire(root, toAdd);
+  }
+};
+
+
+/**
+ * Add a legacy goog.require statement (no return assignment) if it doesn't already exist.
+ * @param {Node} root The root node.
+ * @param {string} toAdd The require to add.
+ */
+const addLegacyRequire = (root, toAdd) => {
   const requires = root.find(jscs.ExpressionStatement, isGoogRequire);
   if (!requires.some(path => path.node.expression.arguments[0].value === toAdd)) {
     const program = root.find(jscs.Program).get();
@@ -987,6 +1001,7 @@ module.exports = {
   addDependency,
   addExports,
   addGoogModuleGet,
+  addLegacyRequire,
   addModuleRequire,
   addRequire,
   getDependency,

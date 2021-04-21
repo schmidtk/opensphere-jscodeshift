@@ -73,8 +73,11 @@ const memberExpressionToString = (node) => {
  * Replace a function call with another.
  * @param {Node} root The root node.
  * @param {Object} options The replace options.
+ * @return {boolean} If a function call was replaced.
  */
 const replaceFunction = (root, options) => {
+  let replaced = false;
+
   const findFn = createFindCallFn(options.replace);
   root.find(jscs.CallExpression, findFn).forEach(path => {
     let args = path.value.arguments;
@@ -84,20 +87,29 @@ const replaceFunction = (root, options) => {
 
     if (args && (!options.requiredArgs || args.length >= options.requiredArgs)) {
       jscs(path).replaceWith(createCall(options.with, args));
+      replaced = true;
     }
   });
+
+  return replaced;
 };
 
 /**
  * Replace a member expression with another.
  * @param {Node} root The root node.
  * @param {Object} options The replace options.
+ * @return {boolean} If a member expression was replaced.
  */
 const replaceMemberExpression = (root, options) => {
+  let replaced = false;
+
   const findFn = createFindMemberExprObject(options.replace);
   root.find(jscs.MemberExpression, findFn).forEach(path => {
     jscs(path).replaceWith(createMemberExpression(options.with));
+    replaced = true;
   });
+
+  return replaced;
 };
 
 /**

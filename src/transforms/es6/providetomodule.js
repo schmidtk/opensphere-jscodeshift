@@ -10,7 +10,7 @@ const {
   replaceProvidesWithModules,
   replaceUIModules
 } = require('../../utils/classes');
-const {addRequire, isClosureClass, isControllerClass, isDirective, isGoogDefine, isGoogRequire, isInterface, replaceLegacyRequire, sortModuleRequires} = require('../../utils/goog');
+const {addLegacyRequire, isClosureClass, isControllerClass, isDirective, isGoogDefine, isGoogRequire, isInterface, replaceLegacyRequire, sortModuleRequires} = require('../../utils/goog');
 const {createAssignmentShim, createUIShim} = require('../../utils/shim');
 const {logger} = require('../../utils/logger');
 const {resolveThis} = require('../../utils/resolvethis');
@@ -124,7 +124,7 @@ module.exports = (file, api, options) => {
   // use module require syntax for all modules that were moved to another file and referenced locally
   movedModules.forEach(name => {
     if (root.find(jscs.MemberExpression, createFindMemberExprObject(name)).length) {
-      addRequire(root, name);
+      addLegacyRequire(root, name);
       replaceLegacyRequire(root, name);
     }
   });
@@ -150,7 +150,7 @@ module.exports = (file, api, options) => {
     // Add the legacy goog.require statement back. This may be a directive used by the template, implicit require,
     // etc that should be manually updated by a developer.
     unusedRequires.forEach((req) => {
-      addRequire(root, req);
+      addLegacyRequire(root, req);
     });
 
     logger.warn(`Found ${unusedRequires.length} legacy require statements that need verification.`);
