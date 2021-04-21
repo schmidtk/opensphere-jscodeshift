@@ -390,6 +390,18 @@ const isPrivate = (node) => {
 
 
 /**
+ * If a root node is for a Closure module (goog.module or ES module) file.
+ * @param {Node} root The root node.
+ * @return {boolean}
+ */
+const isGoogModuleFile = (root) => {
+  const existing = root.find(jscs.ExpressionStatement,
+      (path) => isGoogModule(path) || isGoogDeclareModuleId(path));
+  return existing && existing.length;
+};
+
+
+/**
  * Get the default export identifier from a var declaration assigned from a goog.require or goog.module.get.
  * @param {VariableDeclarator} varDecl The VariableDeclarator node.
  * @param {?string=} varName The name to use if a default export needs to be added.
@@ -989,6 +1001,7 @@ module.exports = {
   isGoogDeclareLegacyNamespace,
   isGoogDefine,
   isGoogModule,
+  isGoogModuleFile,
   isGoogModuleRequire,
   isGoogModuleRequireType,
   isGoogProvide,

@@ -1,5 +1,5 @@
 const jscs = require('jscodeshift');
-const {createFindCallFn} = require('./ast');
+const {createFindCallFn, createFindMemberExprObject} = require('./ast');
 const {isKarmaTest} = require('./karma');
 const {getDefaultSourceOptions} = require('./options');
 
@@ -89,6 +89,18 @@ const replaceFunction = (root, options) => {
 };
 
 /**
+ * Replace a member expression with another.
+ * @param {Node} root The root node.
+ * @param {Object} options The replace options.
+ */
+const replaceMemberExpression = (root, options) => {
+  const findFn = createFindMemberExprObject(options.replace);
+  root.find(jscs.MemberExpression, findFn).forEach(path => {
+    jscs(path).replaceWith(createMemberExpression(options.with));
+  });
+};
+
+/**
  * Print source code and fix whitespace issues with recast's printer.
  * @param {Node} root The root node.
  * @return {string} The printed source.
@@ -130,5 +142,6 @@ module.exports = {
   createMemberExpression,
   memberExpressionToString,
   printSource,
-  replaceFunction
+  replaceFunction,
+  replaceMemberExpression
 }

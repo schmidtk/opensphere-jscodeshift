@@ -2,6 +2,9 @@
 
 const defineTest = require('jscodeshift/dist/testUtils').defineTest;
 
+defineTest(__dirname, 'base', {}, 'base-esmodule');
+defineTest(__dirname, 'base', {}, 'base-module');
+defineTest(__dirname, 'base', {}, 'base-provide');
 defineTest(__dirname, 'bind', {});
 defineTest(__dirname, 'exportproperty', {});
 defineTest(__dirname, 'isboolean', {});
