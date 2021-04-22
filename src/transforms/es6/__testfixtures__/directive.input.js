@@ -22,4 +22,4 @@ os.ns.myComponentDirective = function() {
 /**
  * Add the directive to the module
  */
-os.ui.Module.directive('my-component', [os.ns.myComponentDirective]);
+os.ui.Module.directive('myComponent', [os.ns.myComponentDirective]);

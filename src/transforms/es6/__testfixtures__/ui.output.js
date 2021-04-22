@@ -28,7 +28,7 @@ const directiveTag = 'my-component';
 /**
  * Add the directive to the module
  */
-Module.directive(directiveTag, [directive]);
+Module.directive('myComponent', [directive]);
 
 
 /**

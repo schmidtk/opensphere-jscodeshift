@@ -426,9 +426,7 @@ const convertDirective = (root, path, moduleName) => {
 
   if (directiveCalls.length === 1) {
     const directiveCall = directiveCalls.get().value;
-    const directiveName = directiveCall.arguments[0].value;
-
-    directiveCall.arguments[0] = jscs.identifier(DIRECTIVE_TAG_NAME);
+    const directiveName = String(directiveCall.arguments[0].value).replace(/([A-Z])/g, '-$1').toLowerCase();
 
     const tagDeclarator = jscs.variableDeclarator(jscs.identifier(DIRECTIVE_TAG_NAME), jscs.literal(directiveName));
     const tagDeclaration = jscs.variableDeclaration('const', [tagDeclarator]);
