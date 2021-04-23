@@ -5,6 +5,7 @@ const {addVarName} = require('./ast');
 const {
   getDependency,
   getGlobalRefs,
+  isGoogModuleFile,
   replaceSrcGlobals,
   replaceTestGlobals,
   replaceLegacyRequire
@@ -95,42 +96,46 @@ const isOSGlobalKey = (key) => {
  * @param {NodePath} root The root node path.
  */
 const convertGlobalRefs = (root) => {
+  const isModule = isGoogModuleFile(root);
   const isTestFile = isKarmaTest(root);
 
-  // In source files, first replace OS globals because they may otherwise be detected under the wrong module.
-  // This is not yet supported in tests.
-  if (!isTestFile) {
-    root.find(jscs.MemberExpression, isOSGlobal).forEach(path => {
-      convertOSGlobal(root, path);
+  // Only handle modules (goog or ES) and test files.
+  if (isModule || isTestFile) {
+    // In source files, first replace OS globals because they may otherwise be detected under the wrong module.
+    // This is not yet supported in tests.
+    if (isModule) {
+      root.find(jscs.MemberExpression, isOSGlobal).forEach(path => {
+        convertOSGlobal(root, path);
+      });
+    }
+
+    globalRootNamespaces.forEach((ns) => {
+      const globalDeps = getGlobalRefs(root, ns)
+          .map((globalRef) => {
+            const dependency = getDependency(globalRef, true);
+            if (dependency && dependency.moduleName) {
+              return dependency;
+            }
+
+            logger.warn(`Unable to locate module for global reference ${globalRef}`);
+            return null;
+          })
+          .filter((d, index, self) => d && d.moduleName && !moduleBlacklist.includes(d.moduleName) && self.indexOf(d) === index)
+          .sort((a, b) => a.moduleName > b.moduleName ? -1 : a.moduleName < b.moduleName ? 1 : 0);
+
+      globalDeps.forEach((dependency) => {
+        if (dependency && dependency.moduleName) {
+          // Test files use a legacy goog.require with goog.module.get to actually reference the module, so they need to
+          // be handled differently.
+          if (isTestFile) {
+            replaceTestGlobals(root, dependency.moduleName);
+          } else {
+            replaceSrcGlobals(root, dependency.moduleName);
+          }
+        }
+      });
     });
   }
-
-  globalRootNamespaces.forEach((ns) => {
-    const globalDeps = getGlobalRefs(root, ns)
-        .map((globalRef) => {
-          const dependency = getDependency(globalRef, true);
-          if (dependency && dependency.moduleName) {
-            return dependency;
-          }
-
-          logger.warn(`Unable to locate module for global reference ${globalRef}`);
-          return null;
-        })
-        .filter((d, index, self) => d && d.moduleName && !moduleBlacklist.includes(d.moduleName) && self.indexOf(d) === index)
-        .sort((a, b) => a.moduleName > b.moduleName ? -1 : a.moduleName < b.moduleName ? 1 : 0);
-
-    globalDeps.forEach((dependency) => {
-      if (dependency && dependency.moduleName) {
-        // Test files use a legacy goog.require with goog.module.get to actually reference the module, so they need to
-        // be handled differently.
-        if (isTestFile) {
-          replaceTestGlobals(root, dependency.moduleName);
-        } else {
-          replaceSrcGlobals(root, dependency.moduleName);
-        }
-      }
-    });
-  });
 };
 
 /**
