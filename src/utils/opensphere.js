@@ -112,25 +112,28 @@ const convertGlobalRefs = (root) => {
     globalRootNamespaces.forEach((ns) => {
       const globalDeps = getGlobalRefs(root, ns)
           .map((globalRef) => {
-            const dependency = getDependency(globalRef, true);
-            if (dependency && dependency.moduleName) {
-              return dependency;
+            const dep = getDependency(globalRef, true);
+            if (dep && dep.moduleName) {
+              return dep;
             }
 
-            logger.warn(`Unable to locate module for global reference ${globalRef}`);
+            if (!moduleBlacklist.includes(globalRef)) {
+              logger.warn(`Unable to locate module for global reference ${globalRef}`);
+            }
+
             return null;
           })
           .filter((d, index, self) => d && d.moduleName && !moduleBlacklist.includes(d.moduleName) && self.indexOf(d) === index)
           .sort((a, b) => a.moduleName > b.moduleName ? -1 : a.moduleName < b.moduleName ? 1 : 0);
 
-      globalDeps.forEach((dependency) => {
-        if (dependency && dependency.moduleName) {
+      globalDeps.forEach((dep) => {
+        if (dep && dep.moduleName) {
           // Test files use a legacy goog.require with goog.module.get to actually reference the module, so they need to
           // be handled differently.
           if (isTestFile) {
-            replaceTestGlobals(root, dependency.moduleName);
+            replaceTestGlobals(root, dep.moduleName);
           } else {
-            replaceSrcGlobals(root, dependency.moduleName);
+            replaceSrcGlobals(root, dep.moduleName);
           }
         }
       });
