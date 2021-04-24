@@ -1,0 +1,4 @@
+{
+  "depsFile": "opensphere-jscodeshift/test/deps.js",
+  "replaceSingletons": true
+}

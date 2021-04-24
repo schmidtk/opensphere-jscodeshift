@@ -1,11 +1,12 @@
 goog.module('my.transform.clazz');
+goog.module.declareLegacyNamespace();
 
-const MapContainer = goog.require('os.MapContainer');
-const osFeature = goog.require('os.feature');
-const ui = goog.require('os.ui');
-const MyClass = goog.require('os.ui.MyClass');
 const alertManager = goog.require('os.alert.AlertManager');
+const feature = goog.require('test.os.feature');
 const settings = goog.require('os.config.Settings');
+const ui = goog.require('test.os.ui');
+const MapContainer = goog.require('test.os.MapContainer');
+const MyClass = goog.require('test.os.ui.MyClass');
 
 
 /**
@@ -19,24 +20,21 @@ const STR_CONSTANT = 'str.constant.value';
  * @param {string} z
  * @returns {boolean}
  */
-my.transform.clazz.i = function(x, y, z) {
+const i = function(x, y, z) {
   // an implicit require
   ui.apply();
 
   // an implicit require reusing the generated require
   ui.anotherAction();
 
-  // an explicit require with partially conflicting namespace to the implicit require
+  // a non-implicit require with partially conflicting namespace to the implicit require
   const mc = new MyClass();
-
-  // not in deps.js, falls back to use os.ui
-  const mc2 = new ui.MyClass2();
 
   // an implicit require with an assignment expression
   const s = settings.getInstance().get(STR_CONSTANT);
 
   // usually implicit require, sometimes require'd properly (NOT require'd here)
-  osFeature.doSomething();
+  feature.doSomething();
 
   // usually implicit require, sometimes require'd properly (require'd here)
   MapContainer.getInstance().doSomething();
@@ -49,4 +47,9 @@ my.transform.clazz.i = function(x, y, z) {
 
   // an implicit require with a return expression
   return alertManager.getInstance().sendAlert(x, y, z, mc, s);
-}
+};
+
+exports = {
+  STR_CONSTANT,
+  i
+};

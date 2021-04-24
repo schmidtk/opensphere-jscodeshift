@@ -1,0 +1,4 @@
+{
+  "depsFile": "opensphere/.build/deps.js",
+  "replaceSingletons": false
+}

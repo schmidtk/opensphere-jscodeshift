@@ -1,4 +1,5 @@
 const jscs = require('jscodeshift');
+const config = require('config');
 
 const {createFindCallFn, createFindMemberExprObject, getUniqueVarName} = require('./ast');
 const {getClassNode, registerClassNode} = require('./classregistry');
@@ -261,34 +262,43 @@ const replaceFQClass = (node, moduleName) => {
  * @param {NodePath} path The path.
  * @param {string} moduleName The module name.
  */
-// const moveSingletonToClass = (path, moduleName) => {
-//   const classDef = getClassNode(moduleName);
-//   if (classDef) {
-//     const className = classDef.id.name;
-//     const instanceIdentifier = jscs.identifier('instance');
-//     const varDeclarator = jscs.variableDeclarator(instanceIdentifier, null);
-//     const varDeclaration = jscs.variableDeclaration('let', [varDeclarator]);
-//     const instanceComment = ['*', ` * Global ${className} instance.`, ` * @type {${className}|undefined}`, ' '].join('\n');
-//     varDeclaration.comments = [jscs.commentBlock(instanceComment)];
+const moveSingletonToClass = (path, moduleName) => {
+  const classDef = getClassNode(moduleName);
+  if (classDef) {
+    const className = classDef.id.name;
+    const instanceIdentifier = jscs.identifier('instance');
+    const varDeclarator = jscs.variableDeclarator(instanceIdentifier, null);
+    const varDeclaration = jscs.variableDeclaration('let', [varDeclarator]);
+    const instanceComment = ['*', ` * Global instance.`, ` * @type {${className}|undefined}`, ' '].join('\n');
+    varDeclaration.comments = [jscs.commentBlock(instanceComment)];
 
-//     jscs(path.parent).replaceWith(varDeclaration);
+    jscs(path.parent).replaceWith(varDeclaration);
 
-//     const getInstanceFn = jscs.functionExpression(null, [], jscs.blockStatement([
-//       jscs.ifStatement(
-//         jscs.unaryExpression('!', instanceIdentifier, true),
-//         jscs.blockStatement([
-//           jscs.expressionStatement(
-//             jscs.assignmentExpression('=', instanceIdentifier, jscs.newExpression(jscs.identifier(className), []))
-//           )
-//         ])
-//       ),
-//       jscs.returnStatement(instanceIdentifier)
-//     ]));
-//     const classMethod = addMethodToClass(moduleName, 'getInstance', getInstanceFn, true);
-//     const getInstanceComments = ['*', ' * Get the global instance.', ` * @return {!${className}}`, ' '].join('\n');
-//     classMethod.comments = [jscs.commentBlock(getInstanceComments)];
-//   }
-// };
+    const getInstanceFn = jscs.functionExpression(null, [], jscs.blockStatement([
+      jscs.ifStatement(
+        jscs.unaryExpression('!', instanceIdentifier, true),
+        jscs.blockStatement([
+          jscs.expressionStatement(
+            jscs.assignmentExpression('=', instanceIdentifier, jscs.newExpression(jscs.identifier(className), []))
+          )
+        ])
+      ),
+      jscs.returnStatement(instanceIdentifier)
+    ]));
+    const getInstanceMethod = addMethodToClass(moduleName, 'getInstance', getInstanceFn, true);
+    const getInstanceComments = ['*', ' * Get the global instance.', ` * @return {!${className}}`, ' '].join('\n');
+    getInstanceMethod.comments = [jscs.commentBlock(getInstanceComments)];
+
+    const setInstanceFn = jscs.functionExpression(null, [jscs.identifier('value')], jscs.blockStatement([
+      jscs.expressionStatement(
+        jscs.assignmentExpression('=', instanceIdentifier, jscs.identifier('value'))
+      )
+    ]));
+    const setInstanceMethod = addMethodToClass(moduleName, 'setInstance', setInstanceFn, true);
+    const setInstanceComments = ['*', ' * Set the global instance.', ` * @param {${className}} value`, ' '].join('\n');
+    setInstanceMethod.comments = [jscs.commentBlock(setInstanceComments)];
+  }
+};
 
 const replaceBaseWithSuper = (path, moduleName) => {
   const args = path.value.arguments;
@@ -619,14 +629,18 @@ const convertClass = (root, path, moduleName) => {
     }
   }).forEach(path => convertStaticProperty(root, path, moduleName));
 
-  // move goog.addSingletonGetter to a class getInstance function
   //
-  // TODO: The static getInstance call is not compatible with parent classes that have goog.addSingletonGetter.
+  // move goog.addSingletonGetter to static getInstance/setInstance functions on the class
   //
-  // root.find(jscs.CallExpression, {
-  //   callee: createFindMemberExprObject('goog.addSingletonGetter'),
-  //   arguments: [createFindMemberExprObject(moduleName)]
-  // }).forEach(path => moveSingletonToClass(path, moduleName));
+  // this is config-driven because the static getInstance is not compatible with a parent class using
+  // goog.addSingletonGetter.
+  //
+  if (config.get('replaceSingletons')) {
+    root.find(jscs.CallExpression, {
+      callee: createFindMemberExprObject('goog.addSingletonGetter'),
+      arguments: [createFindMemberExprObject(moduleName)]
+    }).forEach(path => moveSingletonToClass(path, moduleName));
+  }
 
   // move goog.inherits to class extends keyword
   root.find(jscs.CallExpression, {
