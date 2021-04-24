@@ -3,9 +3,9 @@ const config = require('config');
 
 const {createFindCallFn, createFindMemberExprObject, getUniqueVarName} = require('./ast');
 const {getClassNode, registerClassNode} = require('./classregistry');
-const {addExports, isConst, isPrivate, isControllerClass} = require('./goog');
+const {addExports, getDependency, isConst, isPrivate, isControllerClass} = require('./goog');
 const {createCall, memberExpressionToString} = require('./jscs');
-const {logWithNode} = require('./logger');
+const {logger, logWithNode} = require('./logger');
 
 /**
  * Match comments that should be put in the constructor function.
@@ -382,7 +382,25 @@ const replaceProvidesWithModules = (root) => {
  * @param {string} directiveName The directive name.
  */
 const replaceUIModules = (root, controllerName, directiveName) => {
-  const moduleName = controllerName.replace(/Ctrl$/, 'UI');
+  //
+  // Try to create a unique module name using:
+  //  - The controller name with 'Ctrl' replaced with 'UI'
+  //  - The same name with 'UI' dropped
+  //  - Append '_FixMe' and alert the developer
+  //
+  let moduleName = controllerName.replace(/Ctrl$/, 'UI');
+  let existingDep = getDependency(moduleName);
+  if (existingDep) {
+    moduleName = moduleName.replace(/UI$/, '');
+
+    existingDep = getDependency(moduleName);
+
+    if (existingDep) {
+      moduleName = `${moduleName}_FixMe`;
+      logger.warn(`Couldn't create unique module name for ${moduleName}, please update.`);
+    }
+  }
+
   const findFn = createFindCallFn('goog.module');
   root.find(jscs.CallExpression, findFn).forEach((path, idx, paths) => {
     const args = path.value.arguments;

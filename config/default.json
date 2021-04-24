@@ -1,4 +1,5 @@
 {
+  "createUIShims": true,
   "depsFile": "opensphere/.build/deps.js",
   "replaceSingletons": false
 }

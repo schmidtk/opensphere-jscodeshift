@@ -1,4 +1,7 @@
 const jscs = require('jscodeshift');
+
+const config = require('config');
+
 const {createFindMemberExprObject} = require('../../utils/ast');
 const {memberExpressionToString, printSource} = require('../../utils/jscs');
 const {
@@ -15,7 +18,6 @@ const {createAssignmentShim, createUIShim} = require('../../utils/shim');
 const {logger} = require('../../utils/logger');
 const {resolveThis} = require('../../utils/resolvethis');
 const {isOSGlobal, isOSGlobalKey, convertOSGlobal} = require('../../utils/opensphere');
-
 
 module.exports = (file, api, options) => {
   const root = jscs(file.source);
@@ -116,7 +118,7 @@ module.exports = (file, api, options) => {
     moduleCount--;
     replaceUIModules(root, controllerName, directiveName);
 
-    if (!options.dry) {
+    if (!options.dry && config.get('createUIShims')) {
       createUIShim(file.path, controllerName, directiveName);
     }
   }

@@ -6,9 +6,7 @@ const {printSource} = require('../../utils/jscs');
 const {logger} = require('../../utils/logger');
 
 const {createFindMemberExprObject} = require('../../utils/ast');
-const {getDependency, getTempModuleName, loadDeps} = require('../../utils/goog');
-
-loadDeps();
+const {getDependency, getTempModuleName} = require('../../utils/goog');
 
 module.exports = (file, api, options) => {
   const root = jscs(file.source);

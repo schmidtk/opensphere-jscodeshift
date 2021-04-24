@@ -33,6 +33,13 @@ const dependencies = {};
 
 
 /**
+ * If deps have been loaded yet.
+ * @type {boolean}
+ */
+let depsLoaded = false;
+
+
+/**
  * Adds a dependency from a file to the files it requires.
  * @param {string} relPath The path to the js file.
  * @param {!Array<string>} provides An array of strings with
@@ -69,6 +76,10 @@ global.goog = {addDependency};
  * @return {Object|undefined} The dependency, or undefined if not loaded.
  */
 const getDependency = (moduleName, searchParents = false) => {
+  if (!depsLoaded) {
+    loadDeps();
+  }
+
   let dep = dependencies[moduleName]
   if (!dep && searchParents) {
     const parts = moduleName.split('.');
@@ -90,22 +101,26 @@ const getDependency = (moduleName, searchParents = false) => {
  * @param {string=} file The deps file.
  */
 const loadDeps = (file) => {
-  // Resolve the deps file from node_modules. This can be replaced in config/local.json to load deps for other projects.
-  const depsFile = file || config.get('depsFile');
-  const depsPath = require.resolve(depsFile)
-  if (!fs.existsSync(depsPath)) {
-    throw new Error(`Deps file does not exist: ${depsFile}`);
+  if (!depsLoaded) {
+    // Resolve the deps file from node_modules. This can be replaced in config/local.json to load deps for other projects.
+    const depsFile = file || config.get('depsFile');
+    const depsPath = require.resolve(depsFile)
+    if (!fs.existsSync(depsPath)) {
+      throw new Error(`Deps file does not exist: ${depsFile}`);
+    }
+
+    require(depsPath);
+
+    // Resolve Closure deps relative to the base deps file, so the correct version of the Closure library is used.
+    const googDepsPath = require.resolve('google-closure-library/closure/goog/deps', {paths: [depsFile]});
+    if (!fs.existsSync(googDepsPath)) {
+      throw new Error('Unable to resolve Closure deps');
+    }
+
+    require(googDepsPath);
+
+    depsLoaded = true;
   }
-
-  require(depsPath);
-
-  // Resolve Closure deps relative to the base deps file, so the correct version of the Closure library is used.
-  const googDepsPath = require.resolve('google-closure-library/closure/goog/deps', {paths: [depsFile]});
-  if (!fs.existsSync(googDepsPath)) {
-    throw new Error('Unable to resolve Closure deps');
-  }
-
-  require(googDepsPath);
 };
 
 
