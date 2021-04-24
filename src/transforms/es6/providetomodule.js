@@ -116,10 +116,14 @@ module.exports = (file, api, options) => {
   // create a shim for backward compatibility if a controller and directive are in the same file
   if (controllerName && directiveName) {
     moduleCount--;
-    replaceUIModules(root, controllerName, directiveName);
+    const newModuleName = replaceUIModules(root, controllerName, directiveName);
 
-    if (!options.dry && config.get('createUIShims')) {
-      createUIShim(file.path, controllerName, directiveName);
+    if (!options.dry) {
+      if (config.get('createUIShims')) {
+        createUIShim(file.path, controllerName, directiveName);
+      } else {
+        logger.warn(`Skipping UI shims. Replace refs to ${controllerName} and ${directiveName} with ${newModuleName}.`);
+      }
     }
   }
 

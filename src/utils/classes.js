@@ -380,6 +380,7 @@ const replaceProvidesWithModules = (root) => {
  * @param {NodePath} root The root node.
  * @param {string} controllerName The controller name.
  * @param {string} directiveName The directive name.
+ * @return {string} The replaced module name.
  */
 const replaceUIModules = (root, controllerName, directiveName) => {
   //
@@ -410,6 +411,8 @@ const replaceUIModules = (root, controllerName, directiveName) => {
       args[0] = jscs.literal(moduleName);
     }
   });
+
+  return moduleName;
 };
 
 /**
