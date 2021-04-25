@@ -101,13 +101,10 @@ const convertGlobalRefs = (root) => {
 
   // Only handle modules (goog or ES) and test files.
   if (isModule || isTestFile) {
-    // In source files, first replace OS globals because they may otherwise be detected under the wrong module.
-    // This is not yet supported in tests.
-    if (isModule) {
-      root.find(jscs.MemberExpression, isOSGlobal).forEach(path => {
-        convertOSGlobal(root, path);
-      });
-    }
+    // First replace OS globals because they may otherwise be detected under the wrong module.
+    root.find(jscs.MemberExpression, isOSGlobal).forEach(path => {
+      convertOSGlobal(root, path);
+    });
 
     globalRootNamespaces.forEach((ns) => {
       const globalDeps = getGlobalRefs(root, ns)

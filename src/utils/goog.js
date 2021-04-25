@@ -14,8 +14,8 @@ const {
   replaceInComments
 } = require('./ast');
 
-const {createCall, memberExpressionToString} = require('./jscs');
-const {getRootDescribe} = require('./karma');
+const {createCall, createMemberExpression, memberExpressionToString} = require('./jscs');
+const {getRootDescribe, isKarmaTest} = require('./karma');
 const {logger} = require('./logger');
 
 /**
@@ -608,26 +608,32 @@ const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton) => {
 
   // create a variable name that doesn't shadow any local vars
   const varName = getUniqueVarName(root, toReplace);
-
-  // create the variable declaration
-  const callee = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier(requireCall));
-  const call = jscs.callExpression(callee, [jscs.literal(toReplaceAlt || toReplace)]);
   const varIdentifier = jscs.identifier(varName);
-  const varDeclarator = jscs.variableDeclarator(varIdentifier, call);
-  const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
+  const moduleName = toReplaceAlt || toReplace;
 
-  // insert the declaration after goog.module and legacy goog.require statements
-  const program = root.find(jscs.Program).get();
-  const programBody = program.value.body;
-  for (let i = 0; i < programBody.length; i++) {
-    const current = programBody[i];
-    if (!isGoogModule(current) && !isGoogDeclareLegacyNamespace(current) && !isGoogProvide(current) && !isGoogRequire(current)) {
-      programBody.splice(i, 0, varDeclaration);
-      break;
+  const isTestFile = isKarmaTest(root);
+  if (isGoogModuleFile(root)) {
+    // create the variable declaration
+    const callee = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier(requireCall));
+    const call = jscs.callExpression(callee, [jscs.literal(moduleName)]);
+    const varDeclarator = jscs.variableDeclarator(varIdentifier, call);
+    const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
+
+    // insert the declaration after goog.module and legacy goog.require statements
+    const program = root.find(jscs.Program).get();
+    const programBody = program.value.body;
+    for (let i = 0; i < programBody.length; i++) {
+      const current = programBody[i];
+      if (!isGoogModule(current) && !isGoogDeclareLegacyNamespace(current) && !isGoogProvide(current) && !isGoogRequire(current)) {
+        programBody.splice(i, 0, varDeclaration);
+        break;
+      }
     }
+  } else if (isTestFile) {
+    addLegacyRequire(root, moduleName);
   }
 
-  let replaceWith = varIdentifier;
+  let replaceWith = isTestFile ? createMemberExpression(moduleName) : varIdentifier;
 
   // add .getInstance() if needed for the in-line replacements
   if (singleton === true) {

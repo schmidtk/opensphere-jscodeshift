@@ -4,8 +4,8 @@ const MapContainer = goog.require('os.MapContainer');
 const osFeature = goog.require('os.feature');
 const ui = goog.require('os.ui');
 const MyClass = goog.require('os.ui.MyClass');
-const alertManager = goog.require('os.alert.AlertManager');
-const settings = goog.require('os.config.Settings');
+const AlertManager = goog.require('os.alert.AlertManager');
+const Settings = goog.require('os.config.Settings');
 
 
 /**
@@ -33,7 +33,7 @@ my.transform.clazz.i = function(x, y, z) {
   const mc2 = new ui.MyClass2();
 
   // an implicit require with an assignment expression
-  const s = settings.getInstance().get(STR_CONSTANT);
+  const s = Settings.getInstance().get(STR_CONSTANT);
 
   // usually implicit require, sometimes require'd properly (NOT require'd here)
   osFeature.doSomething();
@@ -42,11 +42,11 @@ my.transform.clazz.i = function(x, y, z) {
   MapContainer.getInstance().doSomething();
 
   // usually implicit require, but require'd anyway and needs the implicit conversion instead
-  alertManager.getInstance().warning('WARNING');
+  AlertManager.getInstance().warning('WARNING');
 
   // don't replace
   path.to.nothing();
 
   // an implicit require with a return expression
-  return alertManager.getInstance().sendAlert(x, y, z, mc, s);
+  return AlertManager.getInstance().sendAlert(x, y, z, mc, s);
 }
