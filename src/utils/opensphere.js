@@ -88,7 +88,7 @@ const isOSGlobal = (node) => {
  * @return {boolean}
  */
 const isOSGlobalKey = (key) => {
-  return (!!osGlobals_[key]);
+  return Object.prototype.hasOwnProperty.call(osGlobals_, key);
 };
 
 /**
@@ -148,10 +148,11 @@ const convertGlobalRefs = (root) => {
  */
 const convertOSGlobal = (root, path) => {
   const key = jscsUtils.memberExpressionToString(path.value);
-  const config = osGlobals_[key];
-
-  if (config) {
-    replaceLegacyRequire(root, key, config.require, (config.singleton === true));
+  if (isOSGlobalKey(key)) {
+    const config = osGlobals_[key];
+    if (config) {
+      replaceLegacyRequire(root, key, config.require, (config.singleton === true));
+    }
   }
 };
 
