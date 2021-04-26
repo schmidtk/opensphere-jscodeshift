@@ -17,19 +17,19 @@
   "author": "Kevin Schmidt",
   "license": "Apache-2.0",
   "devDependencies": {
-    "eslint": "^6.8.0",
+    "eslint": "^7.25.0",
     "jest": "^26.6.3",
-    "mkdirp": "^0.5.1",
-    "rimraf": "^2.6.2"
+    "mkdirp": "^1.0.4",
+    "rimraf": "^3.0.2"
   },
   "dependencies": {
-    "camelcase": "^5.3.1",
+    "camelcase": "^6.2.0",
     "colors": "^1.4.0",
     "config": "^3.3.6",
     "get-value": "^3.0.1",
-    "jscodeshift": "^0.11.0",
+    "jscodeshift": "^0.12.0",
     "reserved-words": "^0.1.2",
-    "winston": "^3.2.1"
+    "winston": "^3.3.3"
   },
   "jest": {
     "setupFiles": [
