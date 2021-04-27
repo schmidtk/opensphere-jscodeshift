@@ -49,7 +49,12 @@ const {getDependencies, loadDeps} = require('../utils/goog');
       const dirName = path.dirname(dep.path);
       const dirStats = getStatsObject(dirs, dirName);
 
-      const packageName = dep.path.split(path.sep).shift();
+      const pathParts = dep.path.split(path.sep);
+      let packageName = pathParts.shift();
+      if (packageName.startsWith('@')) {
+        packageName = `${packageName}/${pathParts.shift()}`;
+      }
+
       const packageStats = getStatsObject(packages, packageName);
 
       const moduleType = dep.moduleType || 'legacy';

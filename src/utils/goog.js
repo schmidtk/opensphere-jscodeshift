@@ -66,7 +66,7 @@ const addDependency = (path, provides, requires, loadFlags = {}) => {
         dependencies[moduleName] = {
           moduleName,
           moduleType: loadFlags.module,
-          path: path.replace(/^(\.\.\/)*(workspace\/)?/, '')
+          path: path.replace(/^(\.\.\/)*((modules|workspace)\/)?/, '')
         };
       }
     });
