@@ -13,7 +13,7 @@
     "lint": "eslint --cache 'src/**/*.js'",
     "test": "f() { EXIT=0; npm run lint || EXIT=$?; jest $@ || EXIT=$?; exit $EXIT; }; f",
     "shift": "jscodeshift",
-    "status": "node src/scripts/generate-module-status.js"
+    "stats": "node src/scripts/generate-module-stats.js"
   },
   "author": "Kevin Schmidt",
   "license": "Apache-2.0",

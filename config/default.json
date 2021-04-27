@@ -1,5 +1,11 @@
 {
   "createUIShims": true,
   "depsFile": "opensphere/.build/deps.js",
-  "replaceSingletons": false
+  "replaceSingletons": false,
+  "stats": {
+    "ignoredPackages": [
+      "openlayers",
+      "ol-cesium"
+    ]
+  }
 }
