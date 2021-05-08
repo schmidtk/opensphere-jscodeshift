@@ -1,6 +1,7 @@
 const jscs = require('jscodeshift');
 
-const {convertGlobalRefs} = require('../../utils/opensphere');
+const {sortModuleRequires} = require('../../utils/goog');
+const {convertGlobalRefs, convertLegacyRequires} = require('../../utils/opensphere');
 const {printSource} = require('../../utils/jscs');
 const {logger} = require('../../utils/logger');
 
@@ -9,6 +10,8 @@ module.exports = (file, api, options) => {
   logger.setCurrentFile(file.path);
 
   convertGlobalRefs(root);
+  convertLegacyRequires(root);
+  sortModuleRequires(root);
 
   return printSource(root);
 };

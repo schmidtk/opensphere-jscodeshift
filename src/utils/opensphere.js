@@ -3,9 +3,11 @@ const jscs = require('jscodeshift');
 const jscsUtils = require('./jscs');
 const {addVarName} = require('./ast');
 const {
+  addLegacyRequire,
   getDependency,
   getGlobalRefs,
   isGoogModuleFile,
+  isGoogRequire,
   replaceSrcGlobals,
   replaceTestGlobals,
   replaceLegacyRequire
@@ -139,6 +141,35 @@ const convertGlobalRefs = (root) => {
 };
 
 /**
+ * Replace all legacy goog.require statements found in the root node.
+ * @param {Node} root The root node.
+ */
+const convertLegacyRequires = (root) => {
+  const requireStatements = root.find(jscs.ExpressionStatement, isGoogRequire);
+  const unusedRequires = [];
+  requireStatements.paths().reverse();
+  requireStatements.forEach(path => {
+    const requireVarName = path.value.expression.arguments[0].value;
+    if (path.parent.value.type === 'Program' && !isOSGlobalKey(requireVarName)) {
+      const replacedIdentifier = replaceLegacyRequire(root, requireVarName);
+      if (!replacedIdentifier) {
+        unusedRequires.push(requireVarName);
+      }
+    }
+  });
+
+  if (unusedRequires.length) {
+    // Add the legacy goog.require statement back. This may be a directive used by the template, implicit require,
+    // etc that should be manually updated by a developer.
+    unusedRequires.forEach((req) => {
+      addLegacyRequire(root, req);
+    });
+
+    logger.warn(`Found ${unusedRequires.length} legacy require statements that need verification.`);
+  }
+};
+
+/**
  * Swap out the opensphere global(s) in this path, e.g. os.ui.apply(...)
  * if not already added, add get variable name and require it to the modules, e.g. const osUI = goog.require('os.ui');
  * replace all calls with the new variable name, e.g. osUI.apply(...)
@@ -194,6 +225,7 @@ module.exports = {
   isOSGlobal,
   isOSGlobalKey,
   convertGlobalRefs,
+  convertLegacyRequires,
   convertOSGlobal,
   OSGlobalTransformConfig
 };

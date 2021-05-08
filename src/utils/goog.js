@@ -642,7 +642,9 @@ const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton) => {
     const programBody = program.value.body;
     for (let i = 0; i < programBody.length; i++) {
       const current = programBody[i];
-      if (!isGoogModule(current) && !isGoogDeclareLegacyNamespace(current) && !isGoogProvide(current) && !isGoogRequire(current)) {
+      if (!isGoogDeclareModuleId(current) && current.type !== 'ImportDeclaration' &&
+          !isGoogModule(current) && !isGoogDeclareLegacyNamespace(current) &&
+          !isGoogProvide(current) && !isGoogRequire(current)) {
         programBody.splice(i, 0, varDeclaration);
         break;
       }
@@ -908,9 +910,9 @@ const sortModuleRequires_ = (a, b) => {
   const bIsRequire = b.declarations[0].init.callee.property.name === 'require';
 
   if (aIsRequire === bIsRequire) {
-    const aNamespace = a.declarations[0].init.arguments[0];
-    const bNamespace = b.declarations[0].init.arguments[0];
-    return aNamespace > bNamespace ? -1 : aNamespace < bNamespace ? 1 : 0
+    const aNamespace = a.declarations[0].init.arguments[0].value;
+    const bNamespace = b.declarations[0].init.arguments[0].value;
+    return aNamespace > bNamespace ? 1 : aNamespace < bNamespace ? -1 : 0
   }
 
   return aIsRequire ? -1 : 1;

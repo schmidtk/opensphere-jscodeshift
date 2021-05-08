@@ -2,10 +2,10 @@ goog.module('my.transform.clazz');
 goog.module.declareLegacyNamespace();
 
 const AlertManager = goog.require('os.alert.AlertManager');
-const feature = goog.require('test.os.feature');
 const Settings = goog.require('os.config.Settings');
-const ui = goog.require('test.os.ui');
 const MapContainer = goog.require('test.os.MapContainer');
+const feature = goog.require('test.os.feature');
+const ui = goog.require('test.os.ui');
 const MyClass = goog.require('test.os.ui.MyClass');
 
 

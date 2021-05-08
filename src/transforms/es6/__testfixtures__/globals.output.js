@@ -1,11 +1,11 @@
 goog.module('my.transform.clazz');
 
 const MapContainer = goog.require('os.MapContainer');
+const AlertManager = goog.require('os.alert.AlertManager');
+const Settings = goog.require('os.config.Settings');
 const osFeature = goog.require('os.feature');
 const ui = goog.require('os.ui');
 const MyClass = goog.require('os.ui.MyClass');
-const AlertManager = goog.require('os.alert.AlertManager');
-const Settings = goog.require('os.config.Settings');
 
 
 /**

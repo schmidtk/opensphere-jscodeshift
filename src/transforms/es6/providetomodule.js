@@ -13,11 +13,11 @@ const {
   replaceProvidesWithModules,
   replaceUIModules
 } = require('../../utils/classes');
-const {addLegacyRequire, isClosureClass, isControllerClass, isDirective, isGoogDefine, isGoogRequire, isInterface, replaceLegacyRequire, sortModuleRequires} = require('../../utils/goog');
+const {addLegacyRequire, isClosureClass, isControllerClass, isDirective, isGoogDefine, isInterface, replaceLegacyRequire, sortModuleRequires} = require('../../utils/goog');
 const {createAssignmentShim, createUIShim} = require('../../utils/shim');
 const {logger} = require('../../utils/logger');
 const {resolveThis} = require('../../utils/resolvethis');
-const {isOSGlobal, isOSGlobalKey, convertOSGlobal} = require('../../utils/opensphere');
+const {isOSGlobal, convertLegacyRequires, convertOSGlobal} = require('../../utils/opensphere');
 
 module.exports = (file, api, options) => {
   const root = jscs(file.source);
@@ -135,32 +135,8 @@ module.exports = (file, api, options) => {
     }
   });
 
-  // convert goog.require statements
-  //
-  // TODO: Replace statements in-place to avoid loss of whitespace
-  //
-  const requireStatements = root.find(jscs.ExpressionStatement, isGoogRequire);
-  const unusedRequires = [];
-  requireStatements.paths().reverse();
-  requireStatements.forEach(path => {
-    const requireVarName = path.value.expression.arguments[0].value;
-    if (path.parent.value.type === 'Program' && !isOSGlobalKey(requireVarName)) {
-      const replacedIdentifier = replaceLegacyRequire(root, requireVarName);
-      if (!replacedIdentifier) {
-        unusedRequires.push(requireVarName);
-      }
-    }
-  });
-
-  if (unusedRequires.length) {
-    // Add the legacy goog.require statement back. This may be a directive used by the template, implicit require,
-    // etc that should be manually updated by a developer.
-    unusedRequires.forEach((req) => {
-      addLegacyRequire(root, req);
-    });
-
-    logger.warn(`Found ${unusedRequires.length} legacy require statements that need verification.`);
-  }
+  // convert legacy goog.require statements
+  convertLegacyRequires(root);
 
   if (moduleCount > 1) {
     logger.warn(`${moduleCount} modules remaining in file. Combine or separate into new files.`);

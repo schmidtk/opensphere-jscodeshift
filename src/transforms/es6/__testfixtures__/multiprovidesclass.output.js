@@ -1,8 +1,8 @@
 goog.module('os.ns.MyClass');
 goog.module.declareLegacyNamespace();
 
-const MyEnum = goog.require('os.ns.MyEnum');
 const MY_CONSTANT = goog.require('os.ns.MY_CONSTANT');
+const MyEnum = goog.require('os.ns.MyEnum');
 
 
 /**
