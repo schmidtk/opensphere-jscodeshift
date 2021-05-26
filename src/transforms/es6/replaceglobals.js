@@ -9,9 +9,12 @@ module.exports = (file, api, options) => {
   const root = jscs(file.source);
   logger.setCurrentFile(file.path);
 
-  convertGlobalRefs(root);
-  convertLegacyRequires(root);
-  sortModuleRequires(root);
+  // Ignore shims.
+  if (!file.path.endsWith('_shim.js')) {
+    convertGlobalRefs(root);
+    convertLegacyRequires(root);
+    sortModuleRequires(root);
+  }
 
   return printSource(root);
 };
