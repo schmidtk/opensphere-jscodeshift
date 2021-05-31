@@ -11,8 +11,8 @@ const {getDependencies, loadDeps} = require('../utils/goog');
   const dirs = {};
   const packages = {};
 
-  const dirHeaders = ['Directory,ES6,Goog,Legacy'];
-  const packageHeaders = ['Package,ES6,Goog,Legacy'];
+  const dirHeaders = ['Directory,ES6,Goog,Legacy,Shim'];
+  const packageHeaders = ['Package,ES6,Goog,Legacy,Shim'];
 
   const ignoredPackages = config.has('stats.ignoredPackages') ? config.get('stats.ignoredPackages') : [];
   const seenPaths = {};
@@ -20,7 +20,7 @@ const {getDependencies, loadDeps} = require('../utils/goog');
   const generateStats = (header, stats) => {
     const outputLines = [
       header,
-      ...Object.keys(stats).sort().map((key) => `${key},${stats[key].es6},${stats[key].goog},${stats[key].legacy}`)
+      ...Object.keys(stats).sort().map((key) => `${key},${stats[key].es6},${stats[key].goog},${stats[key].legacy},${stats[key].shim}`)
     ];
 
     return outputLines.join('\n');
@@ -31,7 +31,8 @@ const {getDependencies, loadDeps} = require('../utils/goog');
       baseObj[key] = {
         es6: 0,
         goog: 0,
-        legacy: 0
+        legacy: 0,
+        shim: 0
       };
     }
     return baseObj[key];
@@ -57,7 +58,11 @@ const {getDependencies, loadDeps} = require('../utils/goog');
 
       const packageStats = getStatsObject(packages, packageName);
 
-      const moduleType = dep.moduleType || 'legacy';
+      let moduleType = dep.moduleType || 'legacy';
+      if (dep.path.endsWith('_shim.js')) {
+        moduleType = 'shim';
+      }
+
       if (Object.prototype.hasOwnProperty.call(dirStats, moduleType)) {
         dirStats[moduleType]++;
         packageStats[moduleType]++;
