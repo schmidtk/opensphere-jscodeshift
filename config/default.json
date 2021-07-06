@@ -1,7 +1,7 @@
 {
   "createUIShims": true,
   "depsFile": "opensphere/.build/deps.js",
-  "replaceSingletons": false,
+  "replaceSingletons": true,
   "stats": {
     "ignoredPackages": [
       "openlayers",
