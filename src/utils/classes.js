@@ -465,6 +465,11 @@ const convertDirective = (root, path, moduleName) => {
     jscs(path.parent).insertAfter(tagDeclaration);
 
     addExports(root, DIRECTIVE_TAG_NAME);
+
+    // If the Module.directive argument is the same as the HTML element tag, use the directiveTag identifier.
+    if (directiveCall.arguments[0].value === directiveName) {
+      directiveCall.arguments[0] = jscs.identifier(DIRECTIVE_TAG_NAME);
+    }
   }
 };
 
