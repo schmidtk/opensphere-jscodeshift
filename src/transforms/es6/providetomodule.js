@@ -17,7 +17,7 @@ const {addLegacyRequire, isClosureClass, isControllerClass, isDirective, isGoogD
 const {createAssignmentShim, createUIShim} = require('../../utils/shim');
 const {logger} = require('../../utils/logger');
 const {resolveThis} = require('../../utils/resolvethis');
-const {isOSGlobal, convertLegacyRequires, convertOSGlobal} = require('../../utils/opensphere');
+const {isOSGlobal, convertGlobalRefs, convertLegacyRequires, convertOSGlobal} = require('../../utils/opensphere');
 
 module.exports = (file, api, options) => {
   const root = jscs(file.source);
@@ -148,6 +148,8 @@ module.exports = (file, api, options) => {
     convertOSGlobal(root, path);
   });
 
+  convertGlobalRefs(root);
+  convertLegacyRequires(root);
   sortModuleRequires(root);
 
   return printSource(root);
