@@ -326,6 +326,16 @@ const isGoogRequireCall = node => {
 
 
 /**
+ * If a node is a `goog.require` call.
+ * @param {Node} node The node.
+ * @return {boolean}
+ */
+const isGoogRequireTypeCall = node => {
+  return node.type === 'CallExpression' && isCall(node, 'goog.requireType');
+};
+
+
+/**
  * If a node is a `goog.module.get` call.
  * @param {Node} node The node.
  * @return {boolean}
@@ -936,6 +946,36 @@ const sortModuleRequires = root => {
 
 
 /**
+ * Sort goog.require variable declarations.
+ * @param {Node} root The root node.
+ */
+const sortModuleRequireTypes = root => {
+  const requires = root.find(jscs.VariableDeclaration,
+      (node) => isGoogModuleRequireType(node));
+  if (requires.length) {
+    const requireNodes = requires.nodes().slice().sort(sortModuleRequires_);
+    requires.forEach((path, idx, arr) => {
+      jscs(path).remove([idx]);
+    });
+
+    const program = root.find(jscs.Program).get();
+    const programBody = program.value.body;
+    for (let i = 0; i < programBody.length; i++) {
+      const current = programBody[i];
+      if (!isGoogModule(current) && !isGoogDeclareLegacyNamespace(current) && !isGoogProvide(current) &&
+          !isGoogRequire(current) && !isGoogModuleRequire(current)) {
+        requireNodes.forEach((node, idx, arr) => {
+          programBody.splice(i + idx, 0, node);
+        })
+
+        break;
+      }
+    }
+  }
+};
+
+
+/**
  * Get all global references under a root node starting with a specified namespace.
  * @param {Node} root The root node.
  * @param {string} baseNs The base namespace to search for.
@@ -1064,6 +1104,8 @@ module.exports = {
   isGoogModuleRequireType,
   isGoogProvide,
   isGoogRequire,
+  isGoogRequireCall,
+  isGoogRequireTypeCall,
   isInterface,
   isPrivate,
   loadDeps,
@@ -1074,5 +1116,6 @@ module.exports = {
   replaceSrcGlobals,
   replaceTestGlobals,
   sortModuleRequires,
+  sortModuleRequireTypes,
   sortRequires
 };
