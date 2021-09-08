@@ -810,13 +810,19 @@ const replaceModuleExportsWithEs6 = (root) => {
 /**
  * Remove goog.module.declareLegacyNamespace statement.
  * @param {NodePath} root The root node.
+ * @return {boolean} If the statement was removed.
  */
 const removeLegacyNamespace = (root) => {
+  let removed = false;
+
   // remove goog.module.declareLegacyNamespace calls - this can only be called within a goog.module
   const findLegacyNs = createFindCallFn('goog.module.declareLegacyNamespace');
   root.find(jscs.CallExpression, findLegacyNs).forEach((path, idx, paths) => {
     jscs(path).remove();
+    removed = true;
   });
+
+  return removed;
 };
 
 
