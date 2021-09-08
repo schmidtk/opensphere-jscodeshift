@@ -34,7 +34,9 @@ module.exports = (file, api, options) => {
 
     // Remove goog.module.declareLegacyNamespace, if present.
     removeLegacyNamespace(root);
+
+    return printSource(root);
   }
 
-  return printSource(root);
+  return file.source;
 };
