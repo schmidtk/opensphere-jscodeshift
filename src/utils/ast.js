@@ -1,5 +1,8 @@
 const jscs = require('jscodeshift');
+
 const camelcase = require('camelcase');
+const fs = require('fs');
+const path = require('path');
 const reserved = require('reserved-words');
 
 
@@ -109,6 +112,31 @@ const addVarName = (moduleName, varName) => {
 
 
 /**
+ * Get the module-relative path for a file.
+ * @param {string} absPath The absolute path.
+ * @return {string} The module-relative path, or undefined if the module could not be determined.
+ */
+const getModuleRelativePath = (absPath) => {
+  let modulePath;
+  let currentPath = path.dirname(absPath);
+  while (currentPath) {
+    if (fs.existsSync(path.join(currentPath, 'package.json'))) {
+      break;
+    }
+
+    const nextPath = path.dirname(currentPath);
+    currentPath = nextPath !== currentPath ? nextPath : undefined;
+  }
+
+  if (currentPath) {
+    modulePath = absPath.replace(`${path.dirname(currentPath)}${path.sep}`, '');
+  }
+
+  return modulePath;
+};
+
+
+/**
  * Get a unique variable name to use within the scope of the provided path.
  * @param {NodePath} root The scope's node path.
  * @param {string} originalName The original dot-delimited name.
@@ -187,6 +215,15 @@ const isInComment = (root, value) => {
 };
 
 
+/**
+ * If a node is an ImportDeclaration with a parent relative source.
+ * @param {Node} node The node.
+ * @return {boolean} The result.
+ */
+const isParentRelativeImport = (node) => node.value.type === 'ImportDeclaration' &&
+    node.value.source && node.value.source.value.startsWith('../');
+
+
 const isReferenced = (root, moduleName) => {
   return moduleName.indexOf('.') > -1 ?
       root.find(jscs.MemberExpression, createFindMemberExprObject(moduleName)).length > 0 :
@@ -259,10 +296,12 @@ module.exports = {
   copyComments,
   createFindCallFn,
   createFindMemberExprObject,
+  getModuleRelativePath,
   getUniqueVarName,
   hasVar,
   isCall,
   isInComment,
+  isParentRelativeImport,
   isReferenced,
   replaceInComments,
   replaceFunctionExpressionWithArrow
