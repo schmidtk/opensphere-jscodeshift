@@ -33,14 +33,18 @@ const sortValues = (a, b) => {
 };
 
 /**
- * Sort import declarations.
+ * Sort import declarations. Imports will be grouped by import type, and sorted by import path within each group.
  * @param {Node} root The root node.
+ * @return {boolean} If the order changed.
  */
 const sortImports = (root) => {
+  let changed = false;
+
   const imports = root.find(jscs.ImportDeclaration);
   if (imports.length) {
     const buckets = {};
 
+    // Bucket nodes by import group.
     imports.nodes().slice().forEach((n) => {
       const group = getImportGroup(n);
       if (!buckets[group]) {
@@ -50,6 +54,7 @@ const sortImports = (root) => {
       }
     });
 
+    // Sort each group and add them to the overall sorted list.
     const importNodes = [];
     for (const key in matchers) {
       if (key in buckets) {
@@ -58,10 +63,17 @@ const sortImports = (root) => {
       }
     }
   
+    // Update imports in the source so they're in sorted order.
     imports.forEach((path, idx, arr) => {
-      jscs(path).replaceWith(importNodes[idx]);
+      const target = importNodes[idx];
+      if (target !== path.value) {
+        jscs(path).replaceWith(target);
+        changed = true;
+      }
     });
   }
+
+  return changed;
 };
 
 module.exports = {

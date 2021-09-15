@@ -10,8 +10,12 @@ module.exports = (file, api, options) => {
   const root = jscs(file.source);
   logger.setCurrentFile(file.path);
 
+  let changed = false;
+
   const imports = root.find(jscs.ImportDeclaration);
   if (imports.some(isParentRelativeImport)) {
+    changed = true;
+
     imports.forEach((node) => {
       if (isParentRelativeImport(node)) {
         const importSource = node.value.source;
@@ -19,11 +23,11 @@ module.exports = (file, api, options) => {
         importSource.value = getModuleRelativePath(absPath);
       }
     });
-
-    sortImports(root);
-    
-    return printSource(root);
   }
 
-  return file.source;
+  if (sortImports(root)) {
+    changed = true;
+  }
+  
+  return changed ? printSource(root) : file.source;
 };
