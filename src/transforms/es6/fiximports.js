@@ -2,6 +2,7 @@ const jscs = require('jscodeshift');
 const path = require('path');
 
 const {getModuleRelativePath, isParentRelativeImport} = require('opensphere-jscodeshift/src/utils/ast');
+const {sortImports} = require('opensphere-jscodeshift/src/utils/imports');
 const {printSource} = require('../../utils/jscs');
 const {logger} = require('../../utils/logger');
 
@@ -19,10 +20,10 @@ module.exports = (file, api, options) => {
       }
     });
 
+    sortImports(root);
+    
     return printSource(root);
   }
-
-  // TODO: Sort imports?
 
   return file.source;
 };
