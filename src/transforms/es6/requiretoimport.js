@@ -81,13 +81,10 @@ module.exports = (file, api, options) => {
     const moduleName = requireExpr.value.expression.arguments[0].value;
     const dependency = getDependency(getTempModuleName(moduleName)) || getDependency(moduleName);
     if (dependency && dependency.moduleType === 'es6') {
-      const varName = getUniqueVarName(root, moduleName);
       const depPath = getDepPath(dependency);
 
-      const importDecl = jscs.importDeclaration([jscs.importNamespaceSpecifier(jscs.identifier(varName))], jscs.literal(depPath));
-
-      // disable eslint for unassigned goog.require statements, because the var will be unused
-      importDecl.comments = [jscs.commentLine(' eslint-disable-line', false, true)];
+      // Bare goog.require statements should use a bare import to avoid an unused var eslint error
+      const importDecl = jscs.importDeclaration([], jscs.literal(depPath));
 
       jscs(requireExpr).replaceWith(importDecl);
     }
