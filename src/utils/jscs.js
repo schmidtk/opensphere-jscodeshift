@@ -1,4 +1,6 @@
 const jscs = require('jscodeshift');
+const path = require('path');
+
 const {createFindCallFn, createFindMemberExprObject} = require('./ast');
 const {isKarmaTest} = require('./karma');
 const {getDefaultSourceOptions} = require('./options');
@@ -29,7 +31,6 @@ const createCall = (path, args) => {
   return jscs.callExpression(memberExpression, args);
 };
 
-
 /**
  * Create a member expression from a dot-delimited path (`ol.array.find`), or array of strings.
  * @param {string|Array<string>} path The call path.
@@ -49,6 +50,12 @@ const createMemberExpression = (path) => {
     return expr;
   }, undefined);
 };
+
+/**
+ * Get the path to the Yarn workspace.
+ * @return {string}
+ */
+const getWorkspacePath = () => path.resolve(require.resolve('opensphere'), '..', '..');
 
 /**
  * Convert a MemberExpression node to a string.
@@ -152,6 +159,7 @@ module.exports = {
   bindArgs,
   createCall,
   createMemberExpression,
+  getWorkspacePath,
   memberExpressionToString,
   printSource,
   replaceFunction,

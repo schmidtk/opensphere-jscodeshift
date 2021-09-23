@@ -15,7 +15,7 @@ const {
   replaceInComments
 } = require('./ast');
 
-const {createCall, createMemberExpression, memberExpressionToString} = require('./jscs');
+const {createCall, createMemberExpression, getWorkspacePath, memberExpressionToString} = require('./jscs');
 const {getRootDescribe, isKarmaTest} = require('./karma');
 const {logger} = require('./logger');
 
@@ -48,6 +48,13 @@ let googDepsLoaded = false;
 
 
 /**
+ * Path to the deps file.
+ * @type {string}
+ */
+let depsPath = '';
+
+
+/**
  * Adds a dependency from a file to the files it requires.
  * @param {string} relPath The path to the js file.
  * @param {!Array<string>} provides An array of strings with
@@ -59,14 +66,19 @@ let googDepsLoaded = false;
  *     to {'module': 'goog'} for backwards-compatibility.  Valid properties
  *     and values include {'module': 'goog'} and {'lang': 'es6'}.
  */
-const addDependency = (path, provides, requires, loadFlags = {}) => {
+const addDependency = (relPath, provides, requires, loadFlags = {}) => {
   if (provides && provides.length) {
     provides.forEach((moduleName) => {
       if (!dependencies[moduleName]) {
+        const modulePath = relPath.replace(/^(\.\.\/)*((modules|workspace)\/)?/, '');
+        const workspacePath = getWorkspacePath();
+        const fullPath = path.join(workspacePath, modulePath);
+
         dependencies[moduleName] = {
           moduleName,
           moduleType: loadFlags.module,
-          path: path.replace(/^(\.\.\/)*((modules|workspace)\/)?/, '')
+          path: modulePath,
+          fullPath
         };
       }
     });
@@ -118,7 +130,8 @@ const getDependencies = () => dependencies;
 const loadDeps = (loadGoog = true) => {
   // Resolve the deps file from node_modules. This can be replaced in config/local.json to load deps for other projects.
   const depsFile = config.get('depsFile');
-  const depsPath = require.resolve(depsFile)
+  depsPath = require.resolve(depsFile)
+
   if (!fs.existsSync(depsPath)) {
     throw new Error(`Deps file does not exist: ${depsFile}`);
   }
@@ -139,6 +152,17 @@ const loadDeps = (loadGoog = true) => {
 
     require(googDepsPath);
   }
+};
+
+
+/**
+ * If a Closure dependency has a default export.
+ * @param {Object} dependency
+ * @return {boolean}
+ */
+const hasDefaultExport = (dependency) => {
+  const depSource = fs.readFileSync(dependency.fullPath, 'utf-8');
+  return /\sexport default /.test(depSource);
 };
 
 
@@ -1074,6 +1098,7 @@ module.exports = {
   getGlobalRefs,
   getGoogModuleExports,
   getTempModuleName,
+  hasDefaultExport,
   isClosureClass,
   isConst,
   isControllerClass,

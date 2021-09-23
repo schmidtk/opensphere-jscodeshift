@@ -2,17 +2,17 @@ const jscs = require('jscodeshift');
 
 const path = require('path');
 
-const {printSource} = require('../../utils/jscs');
+const {getWorkspacePath, printSource} = require('../../utils/jscs');
 const {logger} = require('../../utils/logger');
 
-const {createFindMemberExprObject, getUniqueVarName} = require('../../utils/ast');
-const {getDependency, getTempModuleName} = require('../../utils/goog');
+const {createFindMemberExprObject} = require('../../utils/ast');
+const {getDependency, getTempModuleName, hasDefaultExport} = require('../../utils/goog');
 
 module.exports = (file, api, options) => {
   const root = jscs(file.source);
   logger.setCurrentFile(file.path);
 
-  const workspacePath = path.resolve(require.resolve('opensphere'), '..', '..');
+  const workspacePath = getWorkspacePath();
   const relativePath = path.relative(workspacePath, file.path);
   const currentProject = relativePath.split(path.sep)[0];
 
@@ -53,16 +53,30 @@ module.exports = (file, api, options) => {
 
       const imports = declarator.id;
       if (imports.type === 'Identifier') {
-        // Default import
-        const importDecl = jscs.importDeclaration([jscs.importNamespaceSpecifier(imports)], jscs.literal(depPath));
-        jscs(requireDecl).replaceWith(importDecl);
+        if (hasDefaultExport(dependency)) {
+          // Default import
+          const importDecl = jscs.importDeclaration([jscs.importDefaultSpecifier(imports)], jscs.literal(depPath));
+          jscs(requireDecl).replaceWith(importDecl);
+        } else {
+          // Entire module
+          const importDecl = jscs.importDeclaration([jscs.importNamespaceSpecifier(imports)], jscs.literal(depPath));
+          jscs(requireDecl).replaceWith(importDecl);
+        }
       } else if (imports.type === 'ObjectPattern') {
         // Named imports
-        const specifiers = imports.properties.map((prop) => {
-          return jscs.importSpecifier(prop.key, prop.value);
-        });
-        const importDecl = jscs.importDeclaration(specifiers, jscs.literal(depPath));
-        jscs(requireDecl).replaceWith(importDecl);
+        const props = imports.properties;
+        if (props.length === 1 && props[0].key === 'default') {
+          // Assigning a default export
+          const importDecl = jscs.importDeclaration([jscs.importDefaultSpecifier(props[0].value)], jscs.literal(depPath));
+          jscs(requireDecl).replaceWith(importDecl);
+        } else {
+          // Assigning named exports
+          const specifiers = props.map((prop) => {
+            return jscs.importSpecifier(prop.key, prop.value);
+          });
+          const importDecl = jscs.importDeclaration(specifiers, jscs.literal(depPath));
+          jscs(requireDecl).replaceWith(importDecl);
+        }
       } else {
         logger.warn(`Unsupported goog imports type: ${imports.type}`);
       }
