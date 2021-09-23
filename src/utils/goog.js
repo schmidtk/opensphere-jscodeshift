@@ -770,6 +770,18 @@ const exportNamedDeclaration = (path) => {
 
 
 /**
+ * Add a default export to a path node.
+ * @param {NodePath} path The path node.
+ */
+ const exportDefaultDeclaration = (path) => {
+  const defaultExport = jscs.exportDefaultDeclaration(path.value);
+  copyComments(path.value, defaultExport);
+
+  jscs(path).replaceWith(defaultExport);
+};
+
+
+/**
  * Replace goog.module exports with ES6 exports.
  * @param {NodePath} root The root node.
  * @return {boolean} If the module is using a default export.
@@ -781,8 +793,17 @@ const replaceModuleExportsWithEs6 = (root) => {
   if (moduleExports) {
     const exportsType = moduleExports.value.right.type;
     if (exportsType === 'Identifier') {
-      const exportDefaultDecl = jscs.exportDefaultDeclaration(jscs.identifier(moduleExports.value.right.name));
-      jscs(moduleExports.parent).replaceWith(exportDefaultDecl);
+      const id = moduleExports.value.right;
+      const classDecl = root.find(jscs.ClassDeclaration, {id: {name: id.name}});
+      if (classDecl.length === 1) {
+        // The default export is a class, so add the "export default" inline on the class declaration.
+        exportDefaultDeclaration(classDecl.get());
+        jscs(moduleExports.parent).remove();
+      } else {
+        // Replace the goog.module exports with an export default declaration.
+        const exportDefaultDecl = jscs.exportDefaultDeclaration(id);
+        jscs(moduleExports.parent).replaceWith(exportDefaultDecl);
+      }
 
       isDefault = true;
     } else if (exportsType === 'ObjectExpression') {
