@@ -4,16 +4,13 @@
   "description": "Scripts designed to migrate OpenSphere code toward ES6 modules.",
   "scripts": {
     "dryrun": "jscodeshift --dry --print",
-    "usage": "yarn run usage:init && yarn run usage:gen $SRC_DIR && yarn run usage:process",
-    "usage:init": "rm -rf .build && mkdirp .build",
-    "usage:gen": "jscodeshift --dry -t src/scripts/generate-goog-usage.js",
-    "usage:process": "node src/scripts/process-goog-usage.js",
     "init": "rimraf .build && mkdirp .build",
     "inspect": "node --inspect-brk ./node_modules/.bin/jscodeshift -d -p --run-in-band",
     "lint": "eslint --cache 'src/**/*.js'",
     "test": "f() { EXIT=0; npm run lint || EXIT=$?; jest $@ || EXIT=$?; exit $EXIT; }; f",
     "shift": "jscodeshift",
-    "stats": "node src/scripts/generate-module-stats.js"
+    "stats": "node src/scripts/generate-module-stats.js",
+    "usage": "node src/scripts/generate-module-usage.js"
   },
   "author": "Kevin Schmidt",
   "license": "Apache-2.0",

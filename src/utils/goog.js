@@ -78,7 +78,8 @@ const addDependency = (relPath, provides, requires, loadFlags = {}) => {
           moduleName,
           moduleType: loadFlags.module,
           path: modulePath,
-          fullPath
+          fullPath,
+          requires
         };
       }
     });
