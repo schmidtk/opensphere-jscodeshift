@@ -66,7 +66,7 @@ const fixForESModule = (root, file) => {
       } else if (imports.type === 'ObjectPattern') {
         // Named imports
         const props = imports.properties;
-        if (props.length === 1 && props[0].key === 'default') {
+        if (props.length === 1 && props[0].key.name === 'default') {
           // Assigning a default export
           const importDecl = jscs.importDeclaration([jscs.importDefaultSpecifier(props[0].value)], jscs.literal(depPath));
           jscs(requireDecl).replaceWith(importDecl);
