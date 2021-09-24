@@ -6,7 +6,7 @@ const {
   addLegacyRequire,
   getDependency,
   getGlobalRefs,
-  isGoogModuleFile,
+  isModuleFile,
   isGoogRequire,
   replaceSrcGlobals,
   replaceTestGlobals,
@@ -98,7 +98,7 @@ const isOSGlobalKey = (key) => {
  * @param {NodePath} root The root node path.
  */
 const convertGlobalRefs = (root) => {
-  const isModule = isGoogModuleFile(root);
+  const isModule = isModuleFile(root);
   const isTestFile = isKarmaTest(root);
 
   // Only handle modules (goog or ES) and test files.

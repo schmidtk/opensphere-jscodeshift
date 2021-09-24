@@ -6,17 +6,16 @@ const {getWorkspacePath, printSource} = require('../../utils/jscs');
 const {logger} = require('../../utils/logger');
 
 const {createFindMemberExprObject} = require('../../utils/ast');
-const {getDependency, getTempModuleName, hasDefaultExport} = require('../../utils/goog');
+const {getDependency, getTempModuleName, hasDefaultExport, isESModuleFile} = require('../../utils/goog');
 
-module.exports = (file, api, options) => {
-  const root = jscs(file.source);
-  logger.setCurrentFile(file.path);
+const fixForESModule = (root, file) => {
+  let changed = false;
 
   const workspacePath = getWorkspacePath();
   const relativePath = path.relative(workspacePath, file.path);
   const currentProject = relativePath.split(path.sep)[0];
 
-  const getDepPath = (dependency) => {
+  const getDependencyImportPath = (dependency) => {
     let depPath = dependency.path;
     if (depPath.startsWith(`${currentProject}/`)) {
       const fileDir = path.resolve(file.path, '..');
@@ -49,7 +48,9 @@ module.exports = (file, api, options) => {
 
     const dependency = getDependency(getTempModuleName(moduleName)) || getDependency(moduleName);
     if (dependency && dependency.moduleType === 'es6') {
-      const depPath = getDepPath(dependency);
+      changed = true;
+
+      const depPath = getDependencyImportPath(dependency);
 
       const imports = declarator.id;
       if (imports.type === 'Identifier') {
@@ -95,7 +96,9 @@ module.exports = (file, api, options) => {
     const moduleName = requireExpr.value.expression.arguments[0].value;
     const dependency = getDependency(getTempModuleName(moduleName)) || getDependency(moduleName);
     if (dependency && dependency.moduleType === 'es6') {
-      const depPath = getDepPath(dependency);
+      changed = true;
+
+      const depPath = getDependencyImportPath(dependency);
 
       // Bare goog.require statements should use a bare import to avoid an unused var eslint error
       const importDecl = jscs.importDeclaration([], jscs.literal(depPath));
@@ -121,10 +124,64 @@ module.exports = (file, api, options) => {
     const dependency = getDependency(getTempModuleName(moduleName)) || getDependency(moduleName);
     if (dependency && dependency.moduleType === 'es6') {
       if (declarator.id.type === 'Identifier') {
+        changed = true;
         declarator.id = jscs.objectPattern([jscs.property('init', jscs.identifier('default'), declarator.id)]);
       }
     }
   });
 
-  return printSource(root);
+  return changed;
+};
+
+const fixForGoog = (root) => {
+  let changed = false;
+
+  const fixDeclaration = (varDeclaration) => {
+    const declarator = varDeclaration.value.declarations[0];
+    if (declarator.id.type === 'Identifier') {
+      const moduleName = declarator.init.arguments[0].value;
+      const dependency = getDependency(getTempModuleName(moduleName)) || getDependency(moduleName);
+      if (dependency && dependency.moduleType === 'es6' && hasDefaultExport(dependency)) {
+        declarator.id = jscs.objectPattern([jscs.property('init', jscs.identifier('default'), declarator.id)]);
+        changed = true;
+      }
+    }
+  };
+
+  // Fix variable declarations from a goog.require.
+  root.find(jscs.VariableDeclaration, {
+    declarations: [{
+      init: {
+        type: 'CallExpression',
+        callee: createFindMemberExprObject('goog.require')
+      }
+    }]
+  }).forEach(fixDeclaration);
+
+  // Fix variable declarations from a goog.module.get.
+  root.find(jscs.VariableDeclaration, {
+    declarations: [{
+      init: {
+        type: 'CallExpression',
+        callee: createFindMemberExprObject('goog.module.get')
+      }
+    }]
+  }).forEach(fixDeclaration);
+
+  return changed;
+};
+
+module.exports = (file, api, options) => {
+  const root = jscs(file.source);
+  logger.setCurrentFile(file.path);
+
+  let changed = false;
+
+  if (isESModuleFile(root)) {
+    changed = fixForESModule(root, file);
+  } else {
+    changed = fixForGoog(root);
+  }
+
+  return changed ? printSource(root) : file.source;
 };

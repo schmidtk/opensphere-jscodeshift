@@ -459,11 +459,33 @@ const isPrivate = (node) => {
 
 
 /**
- * If a root node is for a Closure module (goog.module or ES module) file.
+ * If a root node is for a goog.declareModuleId file.
+ * @param {Node} root The root node.
+ * @return {boolean}
+ */
+const isESModuleFile = (root) => {
+  const existing = root.find(jscs.ExpressionStatement, (path) => isGoogDeclareModuleId(path));
+  return existing && existing.length;
+};
+
+
+/**
+ * If a root node is for a goog.module file.
  * @param {Node} root The root node.
  * @return {boolean}
  */
 const isGoogModuleFile = (root) => {
+  const existing = root.find(jscs.ExpressionStatement, (path) => isGoogModule(path));
+  return existing && existing.length;
+};
+
+
+/**
+ * If a root node is for a Closure module (goog.module or goog.declareModuleId) file.
+ * @param {Node} root The root node.
+ * @return {boolean}
+ */
+const isModuleFile = (root) => {
   const existing = root.find(jscs.ExpressionStatement,
       (path) => isGoogModule(path) || isGoogDeclareModuleId(path));
   return existing && existing.length;
@@ -503,7 +525,7 @@ const getDefaultExportId = (varDecl, varName = null) => {
  * @param {string} toAdd The require to add.
  */
 const addRequire = (root, toAdd) => {
-  if (isGoogModuleFile(root)) {
+  if (isModuleFile(root)) {
     replaceSrcGlobals(root, toAdd);
   } else {
     addLegacyRequire(root, toAdd);
@@ -665,7 +687,7 @@ const replaceLegacyRequire = (root, toReplace, toReplaceAlt, singleton) => {
   const moduleName = toReplaceAlt || toReplace;
 
   const isTestFile = isKarmaTest(root);
-  if (isGoogModuleFile(root)) {
+  if (isModuleFile(root)) {
     // create the variable declaration
     const callee = jscs.memberExpression(jscs.identifier('goog'), jscs.identifier(requireCall));
     const call = jscs.callExpression(callee, [jscs.literal(moduleName)]);
@@ -1129,7 +1151,9 @@ module.exports = {
   isGoogDeclareLegacyNamespace,
   isGoogDefine,
   isGoogModule,
+  isESModuleFile,
   isGoogModuleFile,
+  isModuleFile,
   isGoogModuleRequire,
   isGoogModuleRequireType,
   isGoogProvide,
