@@ -117,15 +117,14 @@ const fixForESModule = (root, file) => {
     }]
   });
 
-  requireTypeDeclarations.forEach((requireTypeDecl) => {
-    const declarator = requireTypeDecl.value.declarations[0];
-    const moduleName = declarator.init.arguments[0].value;
-
-    const dependency = getDependency(getTempModuleName(moduleName)) || getDependency(moduleName);
-    if (dependency && dependency.moduleType === 'es6') {
-      if (declarator.id.type === 'Identifier') {
-        changed = true;
+  requireTypeDeclarations.forEach((varDeclaration) => {
+    const declarator = varDeclaration.value.declarations[0];
+    if (declarator.id.type === 'Identifier') {
+      const moduleName = declarator.init.arguments[0].value;
+      const dependency = getDependency(getTempModuleName(moduleName)) || getDependency(moduleName);
+      if (dependency && dependency.moduleType === 'es6' && hasDefaultExport(dependency)) {
         declarator.id = jscs.objectPattern([jscs.property('init', jscs.identifier('default'), declarator.id)]);
+        changed = true;
       }
     }
   });
@@ -154,6 +153,16 @@ const fixForGoog = (root) => {
       init: {
         type: 'CallExpression',
         callee: createFindMemberExprObject('goog.require')
+      }
+    }]
+  }).forEach(fixDeclaration);
+
+  // Fix variable declarations from a goog.requireType.
+  root.find(jscs.VariableDeclaration, {
+    declarations: [{
+      init: {
+        type: 'CallExpression',
+        callee: createFindMemberExprObject('goog.requireType')
       }
     }]
   }).forEach(fixDeclaration);
