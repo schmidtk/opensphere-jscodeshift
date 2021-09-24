@@ -149,6 +149,7 @@ const printSource = (root) => {
     // drop extra newline between imports and trailing comma in named imports
     output = output.replace('\';\n\nimport', '\';\nimport');
     output = output.replace(',\n} from', '\n} from');
+    output = output.replace(/{\n\s+(default: \w+)\n[^}]*}/g, '{$1}');
   }
 
   // add trailing newline
