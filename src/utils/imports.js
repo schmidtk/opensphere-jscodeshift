@@ -4,15 +4,15 @@ const isUnassigned = (importDecl) => importDecl.specifiers.length === 0;
 
 const isExternal = (importDecl) => /^[a-zA-Z]/.test(importDecl.source.value);
 
-const isRelative = (importDecl) => importDecl.source.value.startsWith('./');
-
 const isParentRelative = (importDecl) => importDecl.source.value.startsWith('../');
+
+const isRelative = (importDecl) => /^\.\/(?!index\.js)/.test(importDecl.source.value);
 
 const matchers = {
   'unassigned': isUnassigned,
   'external': isExternal,
-  'relative': isRelative,
   'parentRelative': isParentRelative,
+  'relative': isRelative,
   'other': () => true
 };
 
@@ -33,14 +33,13 @@ const sortValues = (a, b) => {
 };
 
 /**
- * Sort import declarations. Imports will be grouped by import type, and sorted by import path within each group.
- * @param {Node} root The root node.
- * @return {boolean} If the order changed.
+ * Get the sorted list of import nodes.
+ * @param {Collection} imports The collection of imports.
+ * @return {Array<Node>} The sorted import nodes.
  */
-const sortImports = (root) => {
-  let changed = false;
+const getSortedImportNodes = (imports) => {
+  const importNodes = [];
 
-  const imports = root.find(jscs.ImportDeclaration);
   if (imports.length) {
     const buckets = {};
 
@@ -55,14 +54,28 @@ const sortImports = (root) => {
     });
 
     // Sort each group and add them to the overall sorted list.
-    const importNodes = [];
     for (const key in matchers) {
       if (key in buckets) {
         buckets[key].sort(sortValues);
         importNodes.push(...buckets[key]);
       }
     }
-  
+  }
+
+  return importNodes;
+}
+
+/**
+ * Sort import declarations. Imports will be grouped by import type, and sorted by import path within each group.
+ * @param {Node} root The root node.
+ * @return {boolean} If the order changed.
+ */
+const sortImports = (root) => {
+  let changed = false;
+
+  const imports = root.find(jscs.ImportDeclaration);
+  const importNodes = getSortedImportNodes(imports);
+  if (importNodes.length) {
     // Update imports in the source so they're in sorted order.
     imports.forEach((path, idx, arr) => {
       const target = importNodes[idx];
@@ -77,5 +90,6 @@ const sortImports = (root) => {
 };
 
 module.exports = {
+  getSortedImportNodes,
   sortImports
 };

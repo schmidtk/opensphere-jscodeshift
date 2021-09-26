@@ -943,6 +943,19 @@ const replaceModuleWithDeclareModuleId = (root, shimDefault = false) => {
 
 
 /**
+ * Get the sort value for two goog.require/goog.requireType variable declarations.
+ * @param {Node} a The first node.
+ * @param {Node} b The second node.
+ * @return {number} The sort value. Sorts goog.require above goog.requireType, then by required namespace.
+ */
+ const sortRequireNodes = (a, b) => {
+  const aNamespace = a.expression.arguments[0].value;
+  const bNamespace = b.expression.arguments[0].value;
+  return aNamespace > bNamespace ? 1 : aNamespace < bNamespace ? -1 : 0
+};
+
+
+/**
  * Sort goog.require statements.
  * @param {Node} root The root node.
  */
@@ -966,7 +979,7 @@ const sortRequires = root => {
  * @param {Node} b The second node.
  * @return {number} The sort value. Sorts goog.require above goog.requireType, then by required namespace.
  */
-const sortModuleRequires_ = (a, b) => {
+const sortModuleRequireNodes = (a, b) => {
   const aIsRequire = a.declarations[0].init.callee.property.name === 'require';
   const bIsRequire = b.declarations[0].init.callee.property.name === 'require';
 
@@ -988,7 +1001,7 @@ const sortModuleRequires = root => {
   const requires = root.find(jscs.VariableDeclaration,
       (node) => isGoogModuleRequire(node) || isGoogModuleRequireType(node));
   if (requires.length) {
-    const requireNodes = requires.nodes().slice().sort(sortModuleRequires_);
+    const requireNodes = requires.nodes().slice().sort(sortModuleRequireNodes);
     requires.forEach((path, idx, arr) => {
       jscs(path).replaceWith(requireNodes[idx]);
     });
@@ -1004,7 +1017,7 @@ const sortModuleRequireTypes = root => {
   const requires = root.find(jscs.VariableDeclaration,
       (node) => isGoogModuleRequireType(node));
   if (requires.length) {
-    const requireNodes = requires.nodes().slice().sort(sortModuleRequires_);
+    const requireNodes = requires.nodes().slice().sort(sortModuleRequireNodes);
     requires.forEach((path, idx, arr) => {
       jscs(path).remove([idx]);
     });
@@ -1149,6 +1162,7 @@ module.exports = {
   isDefaultExport,
   isDirective,
   isGoogDeclareLegacyNamespace,
+  isGoogDeclareModuleId,
   isGoogDefine,
   isGoogModule,
   isESModuleFile,
@@ -1169,6 +1183,8 @@ module.exports = {
   replaceModuleWithDeclareModuleId,
   replaceSrcGlobals,
   replaceTestGlobals,
+  sortRequireNodes,
+  sortModuleRequireNodes,
   sortModuleRequires,
   sortModuleRequireTypes,
   sortRequires

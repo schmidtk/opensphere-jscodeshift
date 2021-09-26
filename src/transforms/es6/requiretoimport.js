@@ -2,6 +2,7 @@ const jscs = require('jscodeshift');
 
 const path = require('path');
 
+const {sortESDependencies} = require('../../utils/deps');
 const {getWorkspacePath, printSource} = require('../../utils/jscs');
 const {logger} = require('../../utils/logger');
 
@@ -188,6 +189,10 @@ module.exports = (file, api, options) => {
 
   if (isESModuleFile(root)) {
     changed = fixForESModule(root, file);
+
+    if (changed) {
+      sortESDependencies(root);
+    }
   } else {
     changed = fixForGoog(root);
   }
