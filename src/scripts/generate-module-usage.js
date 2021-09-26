@@ -28,7 +28,14 @@ const {getDependencies, loadDeps} = require('../utils/goog');
   }
 
   const requires = Object.keys(countMap);
-  requires.sort((a, b) => countMap[b] - countMap[a]);
+  requires.sort((a, b) => {
+    const countDiff = countMap[b] - countMap[a];
+    if (countDiff !== 0) {
+      return countDiff;
+    }
+
+    return a > b ? 1 : b > a ? -1 : 0;
+  });
 
   const output = requires.map((r) => `${r}: ${countMap[r]}`).join('\n');
 
