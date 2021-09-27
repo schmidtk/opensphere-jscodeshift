@@ -8,7 +8,6 @@ const {
   replaceModuleExportsWithEs6,
   replaceModuleWithDeclareModuleId
 } = require('../../utils/goog');
-const {createEs6Shim} = require('../../utils/shim');
 
 module.exports = (file, api, options) => {
   const root = jscs(file.source);
@@ -25,12 +24,7 @@ module.exports = (file, api, options) => {
   const moduleName = replaceModuleWithDeclareModuleId(root, shimDefault);
   if (moduleName) {
     // Replace goog 'exports' with ES6 export statements.
-    const isDefault = replaceModuleExportsWithEs6(root);
-
-    // If the module used a default export, create a shim to preserve backward compatibility.
-    if (isDefault && shimDefault && moduleName && !options.dry) {
-      createEs6Shim(file.path, moduleName);
-    }
+    replaceModuleExportsWithEs6(root, moduleName);
 
     // Remove goog.module.declareLegacyNamespace, if present.
     removeLegacyNamespace(root);
