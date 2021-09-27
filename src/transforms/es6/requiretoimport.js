@@ -6,7 +6,7 @@ const {sortESDependencies} = require('../../utils/deps');
 const {getWorkspacePath, printSource} = require('../../utils/jscs');
 const {logger} = require('../../utils/logger');
 
-const {createFindMemberExprObject} = require('../../utils/ast');
+const {createFindMemberExprObject, copyComments} = require('../../utils/ast');
 const {getDependency, getTempModuleName, hasDefaultExport, isESModuleFile} = require('../../utils/goog');
 
 const fixForESModule = (root, file) => {
@@ -58,10 +58,12 @@ const fixForESModule = (root, file) => {
         if (hasDefaultExport(dependency)) {
           // Default import
           const importDecl = jscs.importDeclaration([jscs.importDefaultSpecifier(imports)], jscs.literal(depPath));
+          copyComments(requireDecl.value, importDecl);
           jscs(requireDecl).replaceWith(importDecl);
         } else {
           // Entire module
           const importDecl = jscs.importDeclaration([jscs.importNamespaceSpecifier(imports)], jscs.literal(depPath));
+          copyComments(requireDecl.value, importDecl);
           jscs(requireDecl).replaceWith(importDecl);
         }
       } else if (imports.type === 'ObjectPattern') {
@@ -70,6 +72,7 @@ const fixForESModule = (root, file) => {
         if (props.length === 1 && props[0].key.name === 'default') {
           // Assigning a default export
           const importDecl = jscs.importDeclaration([jscs.importDefaultSpecifier(props[0].value)], jscs.literal(depPath));
+          copyComments(requireDecl.value, importDecl);
           jscs(requireDecl).replaceWith(importDecl);
         } else {
           // Assigning named exports
@@ -77,6 +80,7 @@ const fixForESModule = (root, file) => {
             return jscs.importSpecifier(prop.key, prop.value);
           });
           const importDecl = jscs.importDeclaration(specifiers, jscs.literal(depPath));
+          copyComments(requireDecl.value, importDecl);
           jscs(requireDecl).replaceWith(importDecl);
         }
       } else {

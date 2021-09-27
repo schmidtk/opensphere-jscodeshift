@@ -48,7 +48,12 @@ const copyComments = (source, target, remove = true) => {
     if (remove) {
       source.comments = null;
     }
-    target.comments = oldComments ? oldComments.map(c => jscs.commentBlock(c.value)) : null;
+
+    if (oldComments) {
+      target.comments = oldComments.map(c => c.type === 'CommentLine' ?
+          jscs.commentLine(c.value, c.leading, c.trailing) :
+          jscs.commentBlock(c.value, c.leading, c.trailing));
+    }
   }
 };
 
