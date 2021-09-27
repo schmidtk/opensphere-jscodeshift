@@ -785,10 +785,13 @@ const createNamedExport = (root, prop) => {
  * @param {NodePath} path The path node.
  */
 const exportNamedDeclaration = (path) => {
-  const namedExport = jscs.exportNamedDeclaration(path.value);
-  copyComments(path.value, namedExport);
+  // Only replace variables assigned in the program body.
+  if (path.parent.value.type === 'Program') {
+    const namedExport = jscs.exportNamedDeclaration(path.value);
+    copyComments(path.value, namedExport);
 
-  jscs(path).replaceWith(namedExport);
+    jscs(path).replaceWith(namedExport);
+  }
 };
 
 
@@ -807,9 +810,10 @@ const exportNamedDeclaration = (path) => {
 /**
  * Replace goog.module exports with ES6 exports.
  * @param {NodePath} root The root node.
+ * @param {string} moduleName The Closure module name.
  * @return {boolean} If the module is using a default export.
  */
-const replaceModuleExportsWithEs6 = (root) => {
+const replaceModuleExportsWithEs6 = (root, moduleName) => {
   let isDefault = false;
 
   const moduleExports = getGoogModuleExports(root);
@@ -851,10 +855,7 @@ const replaceModuleExportsWithEs6 = (root) => {
         });
 
         if (isDefault) {
-          const exportDefaultDecl = jscs.exportDefaultDeclaration(moduleExports.value.right);
-          copyComments(moduleExports.parent.value, exportDefaultDecl);
-
-          jscs(moduleExports.parent).replaceWith(exportDefaultDecl);
+          replaceGoogExportsWithDefault(moduleExports, moduleName);
         } else {
           exportedProps.forEach((prop) => {
             createNamedExport(root, prop);
@@ -867,11 +868,30 @@ const replaceModuleExportsWithEs6 = (root) => {
         logger.warn('No properties found in exports object.');
       }
     } else {
-      logger.warn(`Unsupported exports type: ${exportsType}`);
+      replaceGoogExportsWithDefault(moduleExports, moduleName);
+      isDefault = true;
     }
   }
 
   return isDefault;
+};
+
+
+/**
+ * Assigns goog.module exports to a var that can be exported as the default export.
+ * @param {NodePath} moduleExports The goog exports NodePath.
+ * @param {string} moduleName The module name for the current file.
+ */
+const replaceGoogExportsWithDefault = (moduleExports, moduleName) => {
+  const varIdentifier = jscs.identifier(moduleName.split('.').pop());
+  const varDeclarator = jscs.variableDeclarator(varIdentifier, moduleExports.value.right);
+  const varDeclaration = jscs.variableDeclaration('const', [varDeclarator]);
+  copyComments(moduleExports.parent.value, varDeclaration);
+
+  const exportDefaultDecl = jscs.exportDefaultDeclaration(varIdentifier);
+  jscs(moduleExports.parent).insertAfter(exportDefaultDecl);
+
+  jscs(moduleExports.parent).replaceWith(varDeclaration);
 };
 
 
@@ -915,7 +935,6 @@ const replaceModuleWithDeclareModuleId = (root, shimDefault = false) => {
   const moduleCalls = root.find(jscs.CallExpression, findFn);
   const path = moduleCalls.paths()[0];
   if (!path) {
-    logger.warn(`No goog.module statement detected.`);
     return undefined;
   }
 
@@ -930,8 +949,6 @@ const replaceModuleWithDeclareModuleId = (root, shimDefault = false) => {
 
     // Replace the goog.module statement with goog.declareModuleId.
     jscs(path.parent).replaceWith(declareModuleExpr);
-  } else {
-    logger.warn(`No goog.module statement detected.`);
   }
 
   if (moduleCalls.length > 1) {
