@@ -12,6 +12,18 @@ const {getDependency, getTempModuleName, hasDefaultExport, isESModuleFile} = req
 const fixForESModule = (root, file) => {
   let changed = false;
 
+  const fixDeclaration = (varDeclaration) => {
+    const declarator = varDeclaration.value.declarations[0];
+    if (declarator.id.type === 'Identifier') {
+      const moduleName = declarator.init.arguments[0].value;
+      const dependency = getDependency(getTempModuleName(moduleName)) || getDependency(moduleName);
+      if (dependency && dependency.moduleType === 'es6' && hasDefaultExport(dependency)) {
+        declarator.id = jscs.objectPattern([jscs.property('init', jscs.identifier('default'), declarator.id)]);
+        changed = true;
+      }
+    }
+  };
+
   const workspacePath = getWorkspacePath();
   const relativePath = path.relative(workspacePath, file.path);
   const currentProject = relativePath.split(path.sep)[0];
@@ -112,27 +124,25 @@ const fixForESModule = (root, file) => {
     }
   });
 
-  // Update assigned requireType statements to use the expected {default: Thing} syntax for referencing default exports.
-  const requireTypeDeclarations = root.find(jscs.VariableDeclaration, {
+  // Fix variable declarations from a goog.requireType.
+  root.find(jscs.VariableDeclaration, {
     declarations: [{
       init: {
         type: 'CallExpression',
         callee: createFindMemberExprObject('goog.requireType')
       }
     }]
-  });
+  }).forEach(fixDeclaration);
 
-  requireTypeDeclarations.forEach((varDeclaration) => {
-    const declarator = varDeclaration.value.declarations[0];
-    if (declarator.id.type === 'Identifier') {
-      const moduleName = declarator.init.arguments[0].value;
-      const dependency = getDependency(getTempModuleName(moduleName)) || getDependency(moduleName);
-      if (dependency && dependency.moduleType === 'es6' && hasDefaultExport(dependency)) {
-        declarator.id = jscs.objectPattern([jscs.property('init', jscs.identifier('default'), declarator.id)]);
-        changed = true;
+  // Fix variable declarations from a goog.module.get.
+  root.find(jscs.VariableDeclaration, {
+    declarations: [{
+      init: {
+        type: 'CallExpression',
+        callee: createFindMemberExprObject('goog.module.get')
       }
-    }
-  });
+    }]
+  }).forEach(fixDeclaration);
 
   return changed;
 };
