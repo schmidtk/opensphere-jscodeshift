@@ -1,6 +1,9 @@
 goog.module('os.ns.MyClass');
 goog.module.declareLegacyNamespace();
 
+const Promise = goog.require('goog.Promise');
+const googArray = goog.require('goog.array');
+
 
 /**
  * Class description.
@@ -19,11 +22,11 @@ class MyClass {
     // replaces function with arrow function and removes this
     //
 
-    new goog.Promise((resolve, reject) => {
+    new Promise((resolve, reject) => {
       // do things
     });
 
-    goog.array.forEach(arg1, (el) => {
+    googArray.forEach(arg1, (el) => {
       // do things
     });
 
@@ -31,11 +34,11 @@ class MyClass {
     // does not replace the function if "this" is not explicitly provided
     //
 
-    new goog.Promise(function(resolve, reject) {
+    new Promise(function(resolve, reject) {
       // do things
     });
 
-    goog.array.forEach(arg1, function(el) {
+    googArray.forEach(arg1, function(el) {
       // do things
     }, arg1);
 

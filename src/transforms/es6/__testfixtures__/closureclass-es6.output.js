@@ -16,7 +16,7 @@ goog.require('os.ns.NotReferencedPleaseRemove');
  *
  * Additional description.
  */
-class MyClass extends ParentClass {
+export default class MyClass extends ParentClass {
   /**
    * Constructor.
    * @param {string} arg1 First arg.
@@ -185,4 +185,3 @@ MyClass.foo_ = 'bar';
  * @inheritDoc
  */
 MyClass.prototype.overrideToExpression = goog.nullFunction;
-export default MyClass;

@@ -1,6 +1,7 @@
 goog.module('os.ns.MyClass');
 goog.module.declareLegacyNamespace();
 
+const log = goog.require('goog.log');
 const ParentClass = goog.require('os.ns.ParentClass');
 const SomeType1 = goog.require('os.ns.SomeType1');
 const os1 = goog.require('os1');
@@ -79,7 +80,7 @@ class MyClass extends ParentClass {
    */
   memberFn(arg1, opt_arg2) {
     if (arg1 === MyClass.CONSTANT) {
-      goog.log.fine(MyClass.LOGGER_, 'Some message');
+      log.fine(MyClass.LOGGER_, 'Some message');
       return true;
     }
 
@@ -154,7 +155,7 @@ os.registerClass(MyClass.NAME, MyClass);
  * @private
  * @const
  */
-MyClass.LOGGER_ = goog.log.getLogger(MyClass.NAME);
+MyClass.LOGGER_ = log.getLogger(MyClass.NAME);
 
 /**
  * A constant on the class.

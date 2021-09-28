@@ -4,7 +4,9 @@ goog.declareModuleId('os.ns.MyEnum');
  * An enum.
  * @enum {string}
  */
-export default {
+const MyEnum = {
   KEY1: 'value1',
   KEY2: 'value2'
 };
+
+export default MyEnum;

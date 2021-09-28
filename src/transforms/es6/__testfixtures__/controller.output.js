@@ -1,6 +1,7 @@
 goog.module('os.ns.MyComponentCtrl');
 goog.module.declareLegacyNamespace();
 
+const log = goog.require('goog.log');
 const AlertManager = goog.require('os.alert.AlertManager');
 const ParentCtrl = goog.require('os.ns.ParentCtrl');
 
@@ -86,7 +87,7 @@ class Controller extends ParentCtrl {
    */
   memberFn(arg1, opt_arg2) {
     if (arg1 === Controller.CONSTANT) {
-      goog.log.fine(Controller.LOGGER_, 'Some message');
+      log.fine(Controller.LOGGER_, 'Some message');
       return true;
     }
 

@@ -28,7 +28,7 @@ Module.directive('my-component', [directive]);
  * Test controller.
  * @unrestricted
  */
-class Controller extends ParentCtrl {
+export class Controller extends ParentCtrl {
   /**
    * Constructor.
    * @param {!angular.Scope} $scope The Angular scope.
@@ -149,6 +149,3 @@ class Controller extends ParentCtrl {
  * @inheritDoc
  */
 Controller.prototype.overrideToExpression = goog.nullFunction;
-
-
-export {Controller};
