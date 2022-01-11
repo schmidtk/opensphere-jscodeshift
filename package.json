@@ -22,7 +22,6 @@
   },
   "dependencies": {
     "camelcase": "^6.2.0",
-    "colors": "^1.4.0",
     "config": "^3.3.6",
     "get-value": "^3.0.1",
     "jscodeshift": "^0.11.0",
