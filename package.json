@@ -10,7 +10,8 @@
     "test": "f() { EXIT=0; npm run lint || EXIT=$?; jest $@ || EXIT=$?; exit $EXIT; }; f",
     "shift": "jscodeshift",
     "stats": "node src/scripts/generate-module-stats.js",
-    "usage": "node src/scripts/generate-module-usage.js"
+    "usage": "node src/scripts/generate-module-usage.js",
+    "usage:ol": "node src/scripts/generate-ol-usage.js"
   },
   "author": "Kevin Schmidt",
   "license": "Apache-2.0",
